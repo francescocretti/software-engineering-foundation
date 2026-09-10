@@ -1,0 +1,22 @@
+{
+  "name": "{{PROJECT_NAME}}",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "yarn@{{YARN_VERSION}}",
+  "engines": {
+    "node": "{{NODE_ENGINES}}"
+  },
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "yarn workspaces foreach -Api --exclude {{PROJECT_NAME}} run dev",
+    "build": "yarn workspaces foreach -At --exclude {{PROJECT_NAME}} run build",
+    "lint": "eslint . --max-warnings=0",
+    "lint:fix": "eslint . --fix --max-warnings=0",
+    "typecheck": "yarn workspaces foreach -At --exclude {{PROJECT_NAME}} run typecheck",
+    "test": "yarn workspaces foreach -At --exclude {{PROJECT_NAME}} run test",
+    "validate": "yarn lint && yarn build && yarn typecheck && yarn test",
+    "prepare": "husky"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

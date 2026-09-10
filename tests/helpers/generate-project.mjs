@@ -95,6 +95,53 @@ function collectGroups(versions, groupNames) {
   }, {})
 }
 
+const rootOnlyScripts = new Set(['lint', 'lint:fix', 'validate', 'prepare'])
+
+/**
+ * Applies a stack profile inside a workspace directory: the template is copied
+ * with the shared configuration path pointing at the repository root, the
+ * workspace manifest drops root-only fields and scripts, and dependency groups
+ * already hoisted to the root are not repeated.
+ */
+function generateWorkspace({
+  hoistedGroups,
+  scope,
+  targetDirectory,
+  values,
+  versions,
+  withShared,
+  workspaceName,
+  workspaceProfileName,
+}) {
+  const profile = versions.profiles[workspaceProfileName]
+  if (profile === undefined) {
+    throw new Error(`unknown profile ${workspaceProfileName}`)
+  }
+
+  mkdirSync(targetDirectory, { recursive: true })
+  copyTemplateTree(resolve(assetsRoot, profile.template), targetDirectory, values)
+  rmSync(resolve(targetDirectory, 'eslint.config.mjs'), { force: true })
+
+  const manifestPath = resolve(targetDirectory, 'package.json')
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+  const hoisted = new Set(hoistedGroups)
+
+  manifest.name = `@${scope}/${workspaceName}`
+  delete manifest.packageManager
+  delete manifest.engines
+  manifest.scripts = Object.fromEntries(
+    Object.entries(manifest.scripts).filter(([script]) => !rootOnlyScripts.has(script)),
+  )
+  manifest.dependencies = sortedEntries({
+    ...collectGroups(versions, profile.dependencies),
+    ...(withShared ? { [`@${scope}/shared`]: 'workspace:^' } : {}),
+  })
+  manifest.devDependencies = sortedEntries(
+    collectGroups(versions, profile.devDependencies.filter((group) => !hoisted.has(group))),
+  )
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
+}
+
 /**
  * Materializes one or more profiles exactly as the skill documents it: common
  * assets, shared tooling copied into `.config/`, Git hooks, each stack
@@ -105,6 +152,7 @@ export function generateProject({
   targetDirectory,
   projectName,
   profiles,
+  workspaces = {},
   htmlLang = 'en',
   securityLevel = 'R1',
   securityRationale = 'Public demonstration content without authentication or personal data.',
@@ -126,24 +174,27 @@ export function generateProject({
     PROJECT_NAME: projectName,
     SECURITY_LEVEL: securityLevel,
     SECURITY_RATIONALE: securityRationale,
+    SCOPE: projectName,
     YARN_VERSION: versions.runtime.yarn,
   }
+  const rootValues = { ...values, CONFIG_ROOT: './.config' }
+  const workspaceValues = { ...values, CONFIG_ROOT: '../../.config' }
 
   rmSync(targetDirectory, { force: true, recursive: true })
   mkdirSync(targetDirectory, { recursive: true })
 
-  copyTemplateTree(resolve(assetsRoot, 'common'), targetDirectory, values)
+  copyTemplateTree(resolve(assetsRoot, 'common'), targetDirectory, rootValues)
   copyTemplateTree(
     resolve(assetsRoot, 'tooling/eslint'),
     resolve(targetDirectory, '.config/eslint'),
-    values,
+    rootValues,
   )
   copyTemplateTree(
     resolve(assetsRoot, 'tooling/typescript'),
     resolve(targetDirectory, '.config/typescript'),
-    values,
+    rootValues,
   )
-  copyTemplateTree(resolve(assetsRoot, 'tooling/git'), targetDirectory, values)
+  copyTemplateTree(resolve(assetsRoot, 'tooling/git'), targetDirectory, rootValues)
 
   let dependencies = {}
   let devDependencies = {}
@@ -153,9 +204,25 @@ export function generateProject({
     if (profile === undefined) {
       throw new Error(`unknown profile ${profileName}`)
     }
-    copyTemplateTree(resolve(assetsRoot, profile.template), targetDirectory, values)
+    copyTemplateTree(resolve(assetsRoot, profile.template), targetDirectory, rootValues)
     dependencies = { ...dependencies, ...collectGroups(versions, profile.dependencies) }
     devDependencies = { ...devDependencies, ...collectGroups(versions, profile.devDependencies) }
+
+    if (profile.layout === 'monorepo') {
+      const selected = { ...workspaces, shared: profile.sharedProfile }
+      for (const [workspaceName, workspaceProfileName] of Object.entries(selected)) {
+        generateWorkspace({
+          hoistedGroups: profile.devDependencies,
+          scope: projectName,
+          targetDirectory: resolve(targetDirectory, profile.workspaces[workspaceName]),
+          values: workspaceValues,
+          versions,
+          withShared: workspaceName !== 'shared',
+          workspaceName,
+          workspaceProfileName,
+        })
+      }
+    }
   }
 
   const manifestPath = resolve(targetDirectory, 'package.json')

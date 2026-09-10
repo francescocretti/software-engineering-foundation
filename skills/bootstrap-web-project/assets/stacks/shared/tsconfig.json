@@ -2,9 +2,11 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "{{CONFIG_ROOT}}/typescript/tsconfig.node.json",
   "compilerOptions": {
+    "allowImportingTsExtensions": true,
     "erasableSyntaxOnly": true,
     "moduleDetection": "force",
-    "noEmit": true
+    "noEmit": true,
+    "types": []
   },
-  "include": ["vite.config.ts", "playwright.config.ts", "e2e"]
+  "include": ["src", "vitest.config.ts"]
 }

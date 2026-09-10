@@ -3,10 +3,10 @@ import { defineConfig } from 'eslint/config'
 import {
   createJavaScriptConfig,
   foundationIgnores,
-} from './.config/eslint/base.mjs'
-import { createNodeConfig } from './.config/eslint/node.mjs'
-import { createStylisticConfig } from './.config/eslint/stylistic.mjs'
-import { createTypeScriptConfig } from './.config/eslint/typescript.mjs'
+} from '{{CONFIG_ROOT}}/eslint/base.mjs'
+import { createNodeConfig } from '{{CONFIG_ROOT}}/eslint/node.mjs'
+import { createStylisticConfig } from '{{CONFIG_ROOT}}/eslint/stylistic.mjs'
+import { createTypeScriptConfig } from '{{CONFIG_ROOT}}/eslint/typescript.mjs'
 
 export default defineConfig(
   foundationIgnores,
