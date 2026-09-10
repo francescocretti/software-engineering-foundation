@@ -1,0 +1,74 @@
+# Minimal GitLab CI baseline: reproducible install plus the complete quality
+# gate. It deploys nothing and assumes no environment. Never print variables,
+# dump the environment or enable shell tracing in these jobs.
+
+# Same Node.js major as .node-version and package.json engines.
+image: node:{{NODE_MAJOR}}-bookworm-slim
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+variables:
+  GIT_DEPTH: "1"
+  # Keep the Yarn cache inside the project so GitLab can persist it between jobs.
+  YARN_ENABLE_GLOBAL_CACHE: "false"
+  YARN_CACHE_FOLDER: "$CI_PROJECT_DIR/.yarn/cache"
+  # Hooks are for developer machines; CI runs the full gate explicitly.
+  HUSKY: "0"
+
+default:
+  interruptible: true
+  cache:
+    key:
+      files:
+        - yarn.lock
+    paths:
+      - .yarn/cache
+    policy: pull
+  before_script:
+    - corepack enable
+    - corepack yarn install --immutable
+
+stages:
+  - install
+  - verify
+
+install:
+  stage: install
+  cache:
+    key:
+      files:
+        - yarn.lock
+    paths:
+      - .yarn/cache
+    policy: pull-push
+  script:
+    - corepack yarn --version
+
+lint:
+  stage: verify
+  script:
+    - corepack yarn lint
+
+typecheck:
+  stage: verify
+  script:
+    - corepack yarn typecheck
+
+test:
+  stage: verify
+  script:
+    - corepack yarn test
+
+build:
+  stage: verify
+  script:
+    - corepack yarn build
+
+# Optional: GitLab Secret Detection. Enabling it does not permit committing or
+# printing secrets; it is a second line of defense.
+# include:
+#   - template: Jobs/Secret-Detection.gitlab-ci.yml

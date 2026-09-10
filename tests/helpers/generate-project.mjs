@@ -146,13 +146,15 @@ function generateWorkspace({
  * Materializes one or more profiles exactly as the skill documents it: common
  * assets, shared tooling copied into `.config/`, Git hooks, each stack
  * template in order, and a manifest merged from `versions.json`. Overlay
- * profiles append to `.gitignore` and `.env.example` and merge scripts.
+ * profiles append to `.gitignore` and `.env.example` and merge scripts. The
+ * optional CI asset is copied last.
  */
 export function generateProject({
   targetDirectory,
   projectName,
   profiles,
   workspaces = {},
+  ci = 'none',
   htmlLang = 'en',
   securityLevel = 'R1',
   securityRationale = 'Public demonstration content without authentication or personal data.',
@@ -165,10 +167,11 @@ export function generateProject({
     ACCESSIBILITY_INVARIANTS:
       '- Meet WCAG 2.2 AA for every user-visible page, state and viewport.',
     ACCESSIBILITY_TARGET: 'WCAG 2.2 AA',
-    CI_PROFILE: 'none',
+    CI_PROFILE: ci,
     FOUNDATION_VERSION: foundationVersion,
     HTML_LANG: htmlLang,
     NODE_ENGINES: `>=${versions.runtime.nodeMajor}.0.0 <${versions.runtime.nodeMajor + 1}`,
+    NODE_MAJOR: String(versions.runtime.nodeMajor),
     PROFILES: profiles.join(', '),
     PROFILES_YAML: JSON.stringify(profiles),
     PROJECT_NAME: projectName,
@@ -223,6 +226,10 @@ export function generateProject({
         })
       }
     }
+  }
+
+  if (ci !== 'none') {
+    copyTemplateTree(resolve(assetsRoot, 'ci', ci), targetDirectory, rootValues)
   }
 
   const manifestPath = resolve(targetDirectory, 'package.json')
