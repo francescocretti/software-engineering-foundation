@@ -35,6 +35,10 @@ adopted wholesale.
 | [TypeScript documentation](https://www.typescriptlang.org/docs/) | Compiler behavior and strictness options |
 | [Node.js documentation](https://nodejs.org/docs/latest/api/) | Runtime and package boundary behavior |
 | [React documentation](https://react.dev/) | React programming model |
+| [Vite documentation](https://vite.dev/guide/) | Build tool, environment variable exposure and Vite 8 migration |
+| [Vitest documentation](https://vitest.dev/guide/) | Component test runner configuration and Vitest 5 migration |
+| [jsdom](https://github.com/jsdom/jsdom) | DOM environment for component tests |
+| [Playwright documentation](https://playwright.dev/docs/intro) | Browser-level critical-flow tests and web server orchestration |
 | [Fastify documentation](https://fastify.dev/docs/latest/) | Fastify lifecycle, validation and serialization |
 | [Nest documentation](https://docs.nestjs.com/) | Nest architecture and security mechanisms |
 | [Supabase documentation](https://supabase.com/docs) | RLS, grants, authentication and key handling |

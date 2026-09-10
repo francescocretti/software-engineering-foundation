@@ -13,6 +13,12 @@ verified against the npm registry on 2026-09-10.
   import plugins do not yet share support for ESLint 10.
 - TypeScript remains on 5.9 because `typescript-eslint` 8 supports TypeScript
   versions below 6.1, while TypeScript 7 is already published.
+- Vite stays on 8.2.2 and React on 19.2.8 because the newer releases were
+  published less than 24 hours before verification and are held by the Yarn
+  package-age gate; `@vitejs/plugin-react` 6 requires Vite 8 and Vitest 5
+  supports it.
+- jsdom stays on 29 because jsdom 30 requires Node 24.15 while the foundation
+  pins only the Node major. Raise both together.
 - Upgrade the matrix as a focused dependency change. Verify peer ranges, run
   the representative config tests and run `yarn validate`; do not advance one
   major in isolation.
@@ -44,13 +50,19 @@ For every JavaScript or TypeScript project:
    `GIT-MESSAGE-001` is used, omit commitlint and the `commit-msg` hook only.
 6. Merge `commonDevDependencies` and the selected profile groups from
    `assets/tooling/versions.json` into `devDependencies`, then create the
-   scripts below.
+   scripts below. Groups ending in `DevDependencies` are development
+   dependencies; `reactDependencies` holds the runtime packages of the React
+   profiles.
 7. Add `"prepare": "husky"`, install once and ensure Git records the hook files
    as executable.
 
-React profiles include `react.mjs`; Vite React projects also include its refresh
-configuration. Node backends and Node-run configuration or test files include
-`node.mjs` with deliberately scoped file globs.
+React profiles include `react.mjs` and the `reactDevDependencies` group; the
+React with Vite profile also includes the refresh configuration, the
+`reactViteDevDependencies` group and the `nodeDevDependencies` group for its
+Node-run configuration files. Its template and composition are described in
+[the React reference](stacks/react.md). Node backends and Node-run
+configuration or test files include `node.mjs` with deliberately scoped file
+globs.
 
 ## Script contract
 
