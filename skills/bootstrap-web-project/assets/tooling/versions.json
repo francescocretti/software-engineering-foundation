@@ -69,9 +69,7 @@
       "dependencies": [
         "supabaseDependencies"
       ],
-      "devDependencies": [
-        "supabaseDevDependencies"
-      ]
+      "devDependencies": []
     },
     "shared": {
       "template": "stacks/shared",
@@ -207,8 +205,5 @@
   },
   "supabaseDependencies": {
     "@supabase/supabase-js": "2.116.0"
-  },
-  "supabaseDevDependencies": {
-    "supabase": "2.117.0"
   }
 }

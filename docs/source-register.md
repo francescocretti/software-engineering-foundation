@@ -44,7 +44,6 @@ adopted wholesale.
 | [zod documentation](https://zod.dev/) | Runtime schemas for requests and configuration |
 | [class-validator](https://github.com/typestack/class-validator) | Nest DTO validation |
 | [SWC](https://swc.rs/docs/configuration/compilation) | Decorator metadata transform for Nest tests |
-| [pgTAP](https://pgtap.org/documentation.html) | Database and RLS tests |
 | [PostgreSQL documentation](https://www.postgresql.org/docs/current/) | Grants, policies and function security semantics |
 | [Nest documentation](https://docs.nestjs.com/) | Nest architecture and security mechanisms |
 | [Supabase documentation](https://supabase.com/docs) | RLS, grants, authentication and key handling |

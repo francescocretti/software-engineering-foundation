@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import test, { before } from 'node:test'
 import { fileURLToPath } from 'node:url'
@@ -37,22 +37,19 @@ test('the Supabase overlay composes onto a backend profile', () => {
 
   assert.equal(manifest.name, 'foundation-fastify-supabase-fixture')
   assert.ok('dev' in manifest.scripts, 'base profile scripts survive the overlay')
-  for (const script of ['db:start', 'db:reset', 'db:test', 'db:types', 'db:migration:new']) {
-    assert.ok(script in manifest.scripts, `missing database script: ${script}`)
+  for (const script of ['db:start', 'db:stop', 'db:reset', 'db:test', 'db:types', 'db:migration:new']) {
+    assert.equal(script in manifest.scripts, false, `lightweight profile must not add ${script}`)
   }
   assert.equal(
     manifest.dependencies['@supabase/supabase-js'],
     generated.versions.supabaseDependencies['@supabase/supabase-js'],
   )
-  assert.equal(
-    manifest.devDependencies.supabase,
-    generated.versions.supabaseDevDependencies.supabase,
-  )
+  assert.equal('supabase' in manifest.devDependencies, false, 'the CLI is not part of the baseline')
   assert.equal(manifest.dependencies.fastify, generated.versions.fastifyDependencies.fastify)
 
   const gitignore = readFileSync(resolve(projectDirectory, '.gitignore'), 'utf8')
   assert.match(gitignore, /^dist\/$/m)
-  assert.match(gitignore, /^supabase\/\.temp\/$/m)
+  assert.doesNotMatch(gitignore, /^supabase\/\.temp\/$/m)
 
   const envExample = readFileSync(resolve(projectDirectory, '.env.example'), 'utf8')
   assert.match(envExample, /^PORT=/m)
@@ -64,10 +61,9 @@ test('the Supabase overlay composes onto a backend profile', () => {
     readFileSync(resolve(projectDirectory, '.engineering-foundation.yml'), 'utf8'),
     /^profiles: \["fastify","supabase"\]$/m,
   )
-  assert.match(
-    readFileSync(resolve(projectDirectory, 'supabase/config.toml'), 'utf8'),
-    /^project_id = "foundation-fastify-supabase-fixture"$/m,
-  )
+  for (const path of ['supabase/config.toml', 'supabase/seed.sql', 'supabase/tests']) {
+    assert.equal(existsSync(resolve(projectDirectory, path)), false, `${path} is opt-in tooling`)
+  }
 })
 
 test('every migrated table enables RLS with explicit grants and policies', () => {
@@ -93,39 +89,6 @@ test('every migrated table enables RLS with explicit grants and policies', () =>
   }
 })
 
-test('the pgTAP suite exercises anonymous, owner and cross-user paths', () => {
-  const testsDirectory = resolve(projectDirectory, 'supabase/tests')
-  const suites = readdirSync(testsDirectory).filter((file) => file.endsWith('.test.sql'))
-
-  assert.ok(suites.length > 0, 'expected at least one pgTAP suite')
-
-  for (const file of suites) {
-    const sql = readFileSync(resolve(testsDirectory, file), 'utf8')
-    assert.match(sql, /^begin;/m)
-    assert.match(sql, /select plan\(\d+\);/)
-    assert.match(sql, /set local role anon;/)
-    assert.match(sql, /set local role authenticated;/)
-    assert.match(sql, /set local request\.jwt\.claim\.sub = /)
-    assert.match(sql, /throws_ok\(/)
-    assert.match(sql, /select \* from finish\(\);/)
-    assert.match(sql, /^rollback;/m)
-  }
-})
-
 test('the base profile still passes lint with the overlay applied', () => {
   run(binary('eslint'), ['.', '--max-warnings=0'])
 })
-
-test(
-  'the local Supabase stack applies the migration and passes the pgTAP suite',
-  { skip: process.env.FOUNDATION_SUPABASE_LIVE !== '1' && 'set FOUNDATION_SUPABASE_LIVE=1 with Docker running' },
-  () => {
-    try {
-      run(binary('supabase'), ['start', '--ignore-health-check'])
-      const output = run(binary('supabase'), ['test', 'db'])
-      assert.match(output, /All tests successful/)
-    } finally {
-      run(binary('supabase'), ['stop', '--no-backup'])
-    }
-  },
-)

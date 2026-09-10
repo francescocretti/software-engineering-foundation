@@ -1,2 +1,0 @@
--- Local development seed data only. Keep it synthetic; never copy production
--- rows or credentials into this file.

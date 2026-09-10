@@ -2,36 +2,41 @@
 
 - **Status:** accepted
 - **Date:** 2026-09-10
+- **Amended:** 2026-09-10
 
 ## Context
 
 Supabase exposes PostgreSQL directly to clients, so authorization lives in the
-database. Internal repositories show mature migrations and RLS policies but no
-repeatable test of what policies deny, and mix legacy `anon` and
-`service_role` terminology with the current publishable and secret keys.
-The Supabase CLI and Docker are required to run the local stack, which the
-repository cannot assume in every environment.
+database. Internal repositories show mature migrations and RLS policies, and
+mix legacy `anon` and `service_role` terminology with the current publishable
+and secret keys. The Supabase CLI and live database tests require a container
+runtime and add material installation and CI cost. That conflicts with the
+foundation's primary purpose: bootstrapping small, high-quality projects
+quickly without imposing infrastructure they may not use.
 
 ## Decision
 
 - Model Supabase as an overlay applied after a Fastify, Nest or React profile
-  or on a monorepo root. It contributes `db:*` scripts, key names, the CLI
-  configuration, a reference migration and a pgTAP suite; it does not add
-  application code.
+  or on a monorepo root. It contributes the runtime client, key names and a
+  reference migration; it does not add application code or local
+  infrastructure tooling.
 - Require, for every exposed table, RLS plus revoked default grants plus
   explicit grants plus policies written with `(select auth.uid())`. Functions
   default to invoker rights with an empty `search_path`.
-- Verify the overlay statically on every test run, rejecting migrations that
-  create tables without that structure, and live through pgTAP behind an
-  explicit opt-in when Docker is available.
+- Verify the overlay statically on every foundation test run, rejecting
+  migrations that create tables without that structure.
+- Do not install the Supabase CLI, add `db:*` scripts, require Docker, or ship
+  local-stack configuration, seed data or pgTAP suites in the baseline.
+  Projects may adopt database tooling and live authorization tests separately
+  when their delivery model and risk justify the operational cost.
 - Use publishable and secret key terminology in generated files and map legacy
   names only where tools still require them.
 
 ## Consequences
 
-Generated projects start with a tested authorization model instead of an open
-Data API. Live verification depends on Docker and is opt-in, so the reference
-migration and suite were executed against the local stack when the profile
-was introduced and must be re-run whenever they change. Generated database
-types are produced by the CLI and committed by the project rather than shipped
-by the template.
+Generated projects start with a structurally hardened authorization model
+without inheriting a container runtime or a database toolchain. The baseline
+does not prove policy behavior against a live database; projects that need that
+assurance add an isolated provider-specific workflow deliberately. Database
+types and migration application remain project-owned because they depend on
+the selected hosted or local Supabase workflow.

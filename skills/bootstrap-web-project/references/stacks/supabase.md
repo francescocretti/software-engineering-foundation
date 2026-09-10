@@ -11,27 +11,22 @@ The overlay lives in `assets/stacks/supabase/`:
 
 | File | Purpose |
 | --- | --- |
-| `package.json` | `db:*` scripts merged into the base manifest |
-| `.env.example`, `.gitignore` | Key names appended to the base files; CLI state ignored |
-| `supabase/config.toml` | Local stack with exposed schemas, `max_rows` and confirmed email sign-up |
+| `.env.example` | Hosted project URL and publishable/secret key names appended to the base file |
 | `supabase/migrations/*.sql` | Reference migration: RLS, revoked defaults, column grants, owner policies, `updated_at` trigger |
-| `supabase/tests/*.test.sql` | pgTAP suite covering anonymous, owner and cross-user paths |
-| `supabase/seed.sql` | Synthetic local seed data only |
 
 ## Files to apply
 
 1. Apply the base profile first.
-2. Copy `assets/stacks/supabase/`: merge `scripts` into `package.json`, append
-   `.env.example` and `.gitignore`, copy the `supabase/` directory and replace
-   `{{PROJECT_NAME}}` in `config.toml`.
-3. Add the `supabase` profile groups from `versions.json`:
-   `@supabase/supabase-js` as a dependency and the `supabase` CLI as a
-   development dependency.
+2. Copy `assets/stacks/supabase/`: append `.env.example` and copy the reference
+   migration under `supabase/migrations/`.
+3. Add `@supabase/supabase-js` from the `supabase` profile in `versions.json`
+   as an exact runtime dependency. Do not install the Supabase CLI or require a
+   container runtime as part of this profile.
 4. Replace the reference `profiles` migration with the real initial schema,
-   keeping its RLS, grant and policy structure and its pgTAP test as the model.
-5. With Docker running, execute `corepack yarn db:start`,
-   `corepack yarn db:test` and `corepack yarn db:types`, and commit the
-   generated types.
+   keeping its RLS, grant and policy structure as the model.
+5. Select the hosted or local migration and type-generation workflow that fits
+   the project. Keep generated database types committed, but do not add its
+   provider tooling to the baseline unless the project actually needs it.
 
 ## Client integration
 
@@ -69,9 +64,9 @@ export function createUserClient(
   surface. Do not use user-editable metadata as authorization data.
 - **Rationale:** Grants define what is possible and policies define which rows;
   either one alone leaves the Data API open.
-- **Verification:** The generated-project test rejects migrations that create a
-  table without RLS, revocation and policies; `corepack yarn db:test` runs the
-  pgTAP suites.
+- **Verification:** The foundation's generated-project test rejects migrations
+  that create a table without RLS, revocation and policies. Project review
+  checks that each real policy matches its authorization matrix.
 - **Sources:** [Supabase Row Level Security](https://supabase.com/docs/guides/database/postgres/row-level-security), [Supabase column-level privileges](https://supabase.com/docs/guides/database/postgres/column-level-security), `SEC-AUTHZ-001`.
 - **Exceptions:** A deliberately public table documents its policy and still
   enables RLS with an explicit `select` policy.
@@ -101,31 +96,34 @@ export function createUserClient(
 - **Requirement:** Change schema, grants, policies, functions and storage
   configuration only through versioned migrations. Preserve invariants with
   constraints, index foreign keys and policy columns when query plans require
-  it, regenerate `database.types.ts` after each migration and keep
-  `seed.sql` synthetic.
+  it and regenerate `database.types.ts` after each migration. If the project
+  adds seed data, keep it synthetic and free of production records.
 - **Rationale:** Migrations make environments reproducible and reviewable;
   drifting types hide contract changes from the type checker.
-- **Verification:** `corepack yarn db:reset` applies the migrations from
-  scratch; a typecheck after `db:types` shows no drift.
+- **Verification:** The selected migration workflow applies the history to a
+  clean non-production database; committed generated types pass typecheck and
+  are reviewed with the schema change.
 - **Sources:** [Supabase migrations](https://supabase.com/docs/guides/deployment/database-migrations), [Supabase generating types](https://supabase.com/docs/guides/api/rest/generating-types), `DEP-LOCK-001`.
 - **Exceptions:** Emergency production fixes are captured as a migration
   immediately afterwards.
 
-## `SUPA-TEST-001` — pgTAP proves allowed and denied paths
+## `SUPA-TEST-001` — live authorization tests are opt-in
 
-- **Level:** MUST
+- **Level:** MAY
 - **Applies to:** Supabase projects
 - **Risk levels:** R1, R2, R3
-- **Requirement:** For every table, view and function reachable through the
-  Data API, keep a pgTAP test that exercises anonymous, owning and non-owning
-  identities for `select`, `insert`, `update` and `delete` as applicable. Run
-  `corepack yarn db:test` before merge and in CI when CI is enabled.
-- **Rationale:** Policies are code paths that fail silently by returning no
-  rows; only negative tests show they deny what they should.
-- **Verification:** Review the plan count against the authorization matrix;
-  `corepack yarn db:test` reports every suite successful.
-- **Sources:** [Supabase testing overview](https://supabase.com/docs/guides/local-development/testing/overview), [pgTAP](https://pgtap.org/documentation.html), `SEC-TEST-001`, `SEC-R2-AUTHZ-001`.
-- **Exceptions:** None for exposed objects.
+- **Requirement:** The baseline does not install database test tooling, require
+  Docker or ship pgTAP suites. A project may add live authorization tests in an
+  isolated environment when its threat model and delivery workflow justify
+  them; those tests should exercise anonymous, owning and non-owning identities
+  across the operations exposed by the Data API.
+- **Rationale:** Live policy tests provide stronger assurance, but their local
+  stack and CI runner cost should be an explicit project decision rather than
+  a bootstrap prerequisite.
+- **Verification:** The generated manifest contains no Supabase CLI or `db:*`
+  scripts. When a project opts in, review its test matrix and isolation model.
+- **Sources:** [Supabase testing overview](https://supabase.com/docs/guides/local-development/testing/overview), `SEC-TEST-001`, `SEC-R2-AUTHZ-001`.
+- **Exceptions:** None; this capability is optional.
 
 ## `SUPA-FUNCTION-001` — invoker rights by default
 
