@@ -26,14 +26,16 @@ export async function scanAccessibility(context: Element): Promise<AxeResults> {
 }
 
 /**
- * Fails the test on any axe-core violation and returns the `incomplete`
- * results, which the caller must resolve manually or record for manual
- * verification instead of ignoring.
+ * Fails on violations and on results that axe-core could not determine. An
+ * incomplete result must be resolved or suppressed at the narrowest rule and
+ * target only after its manual verification record exists.
  */
-export async function expectNoAccessibilityViolations(context: Element): Promise<Result[]> {
+export async function expectNoAccessibilityViolations(context: Element): Promise<void> {
   const results = await scanAccessibility(context)
 
   expect(describeResults(results.violations), 'axe-core violations').toBe('')
-
-  return results.incomplete
+  expect(
+    describeResults(results.incomplete),
+    'axe-core incomplete results require manual verification',
+  ).toBe('')
 }

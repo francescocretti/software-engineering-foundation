@@ -19,4 +19,8 @@ test('the home page is keyboard operable and free of detectable violations', asy
     .analyze()
 
   expect(results.violations).toEqual([])
+  expect(
+    results.incomplete,
+    'axe-core incomplete results require manual verification',
+  ).toEqual([])
 })

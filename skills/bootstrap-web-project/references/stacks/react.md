@@ -128,10 +128,11 @@ defines the workspace wiring.
 - **Risk levels:** R1, R2, R3
 - **Requirement:** Test components with Vitest, jsdom and Testing Library using
   semantic queries and user-event interactions, and scan representative
-  rendered states with `expectNoAccessibilityViolations`. Cover critical user
-  journeys with Playwright against the built application, including an axe-core
-  page scan. Keep `test` free of browser prerequisites and expose the browser
-  suite separately as `test:e2e`.
+  rendered states with `expectNoAccessibilityViolations`, which fails on both
+  violations and unreviewed incomplete results. Cover critical user journeys
+  with Playwright against the built application, including an axe-core page
+  scan with the same checks. Keep `test` free of browser prerequisites and
+  expose the browser suite separately as `test:e2e`.
 - **Rationale:** Component tests give fast feedback on behavior and semantics,
   while browser tests verify focus, navigation and page-level accessibility that
   jsdom cannot represent.

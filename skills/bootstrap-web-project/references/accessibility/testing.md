@@ -50,7 +50,10 @@ their frequency or breadth but never remove one.
 - **Rationale:** Rendered scans find detectable issues that source linting cannot,
   while explicit state coverage avoids scanning only an empty initial DOM.
 - **Verification:** Inspect axe assertions and confirm flows open dialogs, menus,
-  errors and asynchronous results before the scan.
+  errors and asynchronous results before the scan. The provided component and
+  browser assertions fail on both `violations` and unreviewed `incomplete`
+  results. After manual verification, suppress only the affected rule and
+  target and link the evidence, owner and review date beside that suppression.
 - **Sources:** [axe-core](https://github.com/dequelabs/axe-core), [Playwright accessibility testing](https://playwright.dev/docs/accessibility-testing).
 - **Exceptions:** A false positive may be suppressed only by rule and smallest
   target, with evidence, owner and review date; never snapshot an entire

@@ -105,6 +105,43 @@ test('the generated component tests pass, including the axe-core scan', () => {
   assert.match(output, /3 passed/)
 })
 
+test('the accessibility helper rejects incomplete axe-core results', () => {
+  const probePath = resolve(projectDirectory, 'src/app/incomplete-result.test.ts')
+  writeFileSync(
+    probePath,
+    [
+      'import axe, { type AxeResults } from \'axe-core\'',
+      'import { expect, it, vi } from \'vitest\'',
+      '',
+      'import { expectNoAccessibilityViolations } from \'../../test/accessibility\'',
+      '',
+      'it(\'rejects an axe-core result that still needs manual verification\', async () => {',
+      '  vi.spyOn(axe, \'run\').mockResolvedValueOnce({',
+      '    violations: [],',
+      '    incomplete: [{',
+      '      id: \'color-contrast\',',
+      '      impact: \'serious\',',
+      '      help: \'Elements must meet minimum color contrast ratio thresholds\',',
+      '      nodes: [{ target: [\'button\'] }],',
+      '    }],',
+      '  } as unknown as AxeResults)',
+      '',
+      '  await expect(expectNoAccessibilityViolations(document.body)).rejects.toThrow(',
+      '    /axe-core incomplete results require manual verification/,',
+      '  )',
+      '})',
+      '',
+    ].join('\n'),
+  )
+
+  try {
+    const output = run(binary('vitest'), ['run', 'src/app/incomplete-result.test.ts'])
+    assert.match(output, /1 passed/)
+  } finally {
+    rmSync(probePath, { force: true })
+  }
+})
+
 test('the generated project builds and keeps the accessible document shell', () => {
   run(binary('vite'), ['build'])
   const html = readFileSync(resolve(projectDirectory, 'dist/index.html'), 'utf8')
