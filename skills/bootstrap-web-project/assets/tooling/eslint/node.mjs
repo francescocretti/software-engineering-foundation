@@ -1,7 +1,7 @@
 import { defineConfig } from 'eslint/config'
 import globals from 'globals'
 
-const defaultNodeFiles = ['**/*.{js,mjs,cjs,ts}']
+const defaultNodeFiles = ['**/*.{js,mjs,cjs,ts,mts,cts}']
 
 export function createNodeConfig({
   allowConsole = false,

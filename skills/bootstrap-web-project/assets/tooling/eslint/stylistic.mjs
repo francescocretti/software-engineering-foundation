@@ -1,7 +1,7 @@
 import stylistic from '@stylistic/eslint-plugin'
 import { defineConfig } from 'eslint/config'
 
-const defaultCodeFiles = ['**/*.{js,mjs,cjs,ts,tsx,jsx}']
+const defaultCodeFiles = ['**/*.{js,mjs,cjs,ts,tsx,mts,cts,jsx}']
 
 export function createStylisticConfig({ files = defaultCodeFiles } = {}) {
   return defineConfig({

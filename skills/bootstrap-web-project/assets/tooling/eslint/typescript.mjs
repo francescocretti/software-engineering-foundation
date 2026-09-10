@@ -3,7 +3,7 @@ import importPlugin from 'eslint-plugin-import'
 import { defineConfig } from 'eslint/config'
 import tseslint from 'typescript-eslint'
 
-const defaultTypeScriptFiles = ['**/*.{ts,tsx}']
+const defaultTypeScriptFiles = ['**/*.{ts,tsx,mts,cts}']
 
 export function createTypeScriptConfig({
   files = defaultTypeScriptFiles,
