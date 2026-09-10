@@ -1,0 +1,23 @@
+{
+  "name": "{{PROJECT_NAME}}",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "yarn@{{YARN_VERSION}}",
+  "engines": {
+    "node": "{{NODE_ENGINES}}"
+  },
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "nest build",
+    "start": "node --env-file-if-exists=.env dist/main.js",
+    "lint": "eslint . --max-warnings=0",
+    "lint:fix": "eslint . --fix --max-warnings=0",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "validate": "yarn lint && yarn typecheck && yarn test && yarn build",
+    "prepare": "husky"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

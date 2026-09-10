@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./.config/typescript/tsconfig.node.json",
+  "compilerOptions": {
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "noEmit": true,
+    "verbatimModuleSyntax": false
+  },
+  "include": ["src", "test", "vitest.config.mts"]
+}

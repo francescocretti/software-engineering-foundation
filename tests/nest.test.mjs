@@ -1,0 +1,108 @@
+import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
+import { existsSync, readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import test, { before } from 'node:test'
+import { fileURLToPath } from 'node:url'
+
+import { generateProject } from './helpers/generate-project.mjs'
+
+const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const projectDirectory = resolve(repositoryRoot, 'tests/.generated/nest')
+const binary = (name) => resolve(repositoryRoot, 'node_modules/.bin', name)
+
+function run(command, args) {
+  return execFileSync(command, args, {
+    cwd: projectDirectory,
+    encoding: 'utf8',
+    env: { ...process.env, CI: '1', NO_COLOR: '1' },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+}
+
+let generated
+
+before(() => {
+  generated = generateProject({
+    targetDirectory: projectDirectory,
+    projectName: 'foundation-nest-fixture',
+    profiles: ['nest'],
+    securityLevel: 'R2',
+    securityRationale: 'Representative authenticated API handling business data.',
+  })
+})
+
+test('the generated Nest project is complete and fully resolved', () => {
+  for (const file of [
+    '.config/eslint/typescript.mjs',
+    '.env.example',
+    '.engineering-foundation.yml',
+    'nest-cli.json',
+    'src/app.module.ts',
+    'src/app.setup.ts',
+    'src/common/stable-error.filter.ts',
+    'src/config/env.ts',
+    'src/main.ts',
+    'test/app.e2e.test.ts',
+    'tsconfig.build.json',
+    'vitest.config.mts',
+  ]) {
+    assert.ok(existsSync(resolve(projectDirectory, file)), `missing generated file: ${file}`)
+  }
+
+  const manifest = JSON.parse(readFileSync(resolve(projectDirectory, 'package.json'), 'utf8'))
+  assert.equal(manifest.type, undefined, 'Nest 11 projects stay CommonJS')
+  assert.deepEqual(manifest.dependencies, generated.versions.nestDependencies)
+  for (const script of ['dev', 'start', 'lint', 'lint:fix', 'typecheck', 'test', 'build', 'validate']) {
+    assert.ok(script in manifest.scripts, `missing script contract: ${script}`)
+  }
+  assert.match(
+    readFileSync(resolve(projectDirectory, '.engineering-foundation.yml'), 'utf8'),
+    /^ {2}level: "R2"$/m,
+  )
+})
+
+test('the generated Nest project passes the shared lint gate', () => {
+  run(binary('eslint'), ['.', '--max-warnings=0'])
+})
+
+test('the generated Nest project typechecks', () => {
+  run(binary('tsc'), ['-p', 'tsconfig.json'])
+})
+
+test('the generated Nest tests cover validation, throttling and the error contract', () => {
+  const output = run(binary('vitest'), ['run'])
+  assert.match(output, /6 passed/)
+})
+
+test('the generated Nest project builds with the Nest CLI and boots', () => {
+  run(binary('nest'), ['build'])
+  assert.ok(existsSync(resolve(projectDirectory, 'dist/main.js')))
+
+  const output = run(process.execPath, ['-e', [
+    'const { NestFactory } = require("@nestjs/core")',
+    'const { AppModule } = require("./dist/app.module.js")',
+    'const { configureApp } = require("./dist/app.setup.js")',
+    'void (async () => {',
+    '  const app = await NestFactory.create(AppModule, { logger: false })',
+    '  configureApp(app)',
+    '  await app.listen(0, "127.0.0.1")',
+    '  const response = await fetch((await app.getUrl()) + "/health")',
+    '  console.log(response.status, await response.text())',
+    '  await app.close()',
+    '})()',
+  ].join('\n')])
+  assert.match(output, /^200 \{"status":"ok"\}/)
+})
+
+test('the generated Nest configuration fails fast without leaking values', () => {
+  const output = run(process.execPath, ['-e', [
+    'const { validateEnv } = require("./dist/config/env.js")',
+    'try { validateEnv({ PORT: "not-a-port", CORS_ORIGINS: "javascript:alert(1)" }) }',
+    'catch (error) { console.log(error.message) }',
+  ].join('\n')])
+  assert.match(output, /Invalid configuration for: /)
+  assert.match(output, /PORT/)
+  assert.match(output, /CORS_ORIGINS/)
+  assert.doesNotMatch(output, /not-a-port|javascript:/)
+})
