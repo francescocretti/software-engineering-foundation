@@ -18,10 +18,10 @@ without native Agent Skills support.
 
 The repository structure, shared standards, mandatory accessibility standard,
 risk-based security standard, shared tooling assets and the React with Vite,
-Fastify, Nest and Supabase profiles are established. Every template is verified
-on each test run by generating a project and running its lint, typecheck,
-tests and build. The full-stack monorepo profile and optional GitLab CI are
-introduced in separate, reviewable stages before the first stable release.
+Fastify, Nest, Supabase and full-stack monorepo profiles are established. Every
+template is verified on each test run by generating a project and running its
+lint, typecheck, tests and build. Optional GitLab CI is introduced as the last
+stage before the first stable release.
 
 ## Supported scope
 

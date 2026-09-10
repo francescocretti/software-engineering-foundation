@@ -48,6 +48,7 @@ user choices and recording every applied foundation decision.
 - For R2, read [R2 — Standard](references/security/r2-standard.md).
 - For R3, read [R3 — High](references/security/r3-high.md).
 - For every frontend, read [accessibility](references/accessibility.md).
+- For a full-stack project, read [monorepo](references/monorepo.md).
 - For React with Vite, read [React](references/stacks/react.md).
 - For Fastify, read [Fastify](references/stacks/fastify.md).
 - For Nest, read [Nest](references/stacks/nest.md).

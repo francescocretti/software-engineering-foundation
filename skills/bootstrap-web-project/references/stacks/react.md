@@ -37,6 +37,7 @@ The production template lives in `assets/stacks/react-vite/`:
    | `{{HTML_LANG}}` | Primary content language as a BCP 47 tag, agreed with the user |
    | `{{YARN_VERSION}}` | `runtime.yarn` from `versions.json` |
    | `{{NODE_ENGINES}}` | `>=<nodeMajor>.0.0 <<nodeMajor + 1>` from `versions.json` |
+   | `{{CONFIG_ROOT}}` | `./.config` standalone, `../../.config` inside a monorepo workspace |
 
 3. Fill `dependencies` from the `reactDependencies` group and `devDependencies`
    from `commonDevDependencies`, `nodeDevDependencies`, `reactDevDependencies`

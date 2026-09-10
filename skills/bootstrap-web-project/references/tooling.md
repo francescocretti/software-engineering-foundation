@@ -63,7 +63,8 @@ React profiles include `react.mjs` and the Vite refresh configuration; Node
 backends and Node-run configuration or test files include `node.mjs` with
 deliberately scoped file globs. Each stack reference describes its template and
 composition: [React](stacks/react.md), [Fastify](stacks/fastify.md),
-[Nest](stacks/nest.md) and [Supabase](stacks/supabase.md).
+[Nest](stacks/nest.md) and [Supabase](stacks/supabase.md); the
+[monorepo reference](monorepo.md) composes them under one root.
 
 ## Script contract
 
