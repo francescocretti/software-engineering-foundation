@@ -179,7 +179,9 @@ test('the dependency matrix stays exact and on verified compatibility majors', (
   const dependencies = {
     ...versions.commonDevDependencies,
     ...versions.nodeDevDependencies,
+    ...versions.reactDependencies,
     ...versions.reactDevDependencies,
+    ...versions.reactViteDevDependencies,
   }
 
   assert.equal(versions.runtime.nodeMajor, 24)
@@ -187,6 +189,10 @@ test('the dependency matrix stays exact and on verified compatibility majors', (
   assert.match(dependencies.eslint, /^9\./)
   assert.match(dependencies.typescript, /^5\.9\./)
   assert.match(dependencies['typescript-eslint'], /^8\./)
+  assert.match(dependencies.vite, /^8\./)
+  assert.match(dependencies.vitest, /^5\./)
+  assert.match(dependencies.react, /^19\./)
+  assert.equal(dependencies.react, dependencies['react-dom'])
   assert.equal('prettier' in dependencies, false)
 
   for (const [name, version] of Object.entries(dependencies)) {
