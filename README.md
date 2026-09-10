@@ -1,7 +1,7 @@
 # Software Engineering Foundation
 
 Shared, model-agnostic foundations for starting and maintaining TypeScript web
-projects across Mezzo Forte and BlackBytes.
+projects, usable by any team and any coding agent.
 
 This repository combines:
 
@@ -54,7 +54,7 @@ Next.js is intentionally outside the initial scope.
   [`skills/bootstrap-web-project/SKILL.md`](skills/bootstrap-web-project/SKILL.md).
 - Contributors changing a standard start at
   [`docs/governance.md`](docs/governance.md).
-- Provenance and research sources are recorded in
+- Provenance and public sources are recorded in
   [`docs/source-register.md`](docs/source-register.md).
 
 ## Repository layout
@@ -67,3 +67,7 @@ tests/                        Structural and behavioral validation
 
 The skill uses progressive disclosure: it reads the shared foundation first,
 then only the risk and stack references relevant to the selected project.
+
+## License
+
+Released under the [MIT License](LICENSE).
