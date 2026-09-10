@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 
 import { ESLint } from 'eslint'
 
-import { generateReactViteProject } from './helpers/generate-react-vite.mjs'
+import { generateProject } from './helpers/generate-project.mjs'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const projectDirectory = resolve(repositoryRoot, 'tests/.generated/react-vite')
@@ -25,9 +25,10 @@ function run(command, args) {
 let generated
 
 before(() => {
-  generated = generateReactViteProject({
+  generated = generateProject({
     targetDirectory: projectDirectory,
     projectName: 'foundation-react-vite-fixture',
+    profiles: ['react-vite'],
   })
 })
 
