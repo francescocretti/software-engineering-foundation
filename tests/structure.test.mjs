@@ -210,6 +210,11 @@ test('the dependency matrix stays exact and on verified compatibility majors', (
     }
   }
 
+  assert.equal(
+    versions.foundationVersion,
+    JSON.parse(readFileSync(resolve(repositoryRoot, 'package.json'), 'utf8')).version,
+    'versions.json carries the foundation version so installed skills stay self-contained',
+  )
   assert.equal(versions.runtime.nodeMajor, 24)
   assert.equal(versions.runtime.yarn, '4.18.0')
   assert.match(dependencies.eslint, /^9\./)

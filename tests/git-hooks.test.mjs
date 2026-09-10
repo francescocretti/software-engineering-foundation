@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 
-import { generateProject } from './helpers/generate-project.mjs'
+import { generateProject } from '../skills/bootstrap-web-project/scripts/generate-project.mjs'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const ensureGitRoot = resolve(

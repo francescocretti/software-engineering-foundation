@@ -5,13 +5,14 @@ import { dirname, resolve } from 'node:path'
 import test, { before } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
-import { generateProject } from './helpers/generate-project.mjs'
+import { generateProject } from '../skills/bootstrap-web-project/scripts/generate-project.mjs'
+import { clearGeneratedDirectory, generatedDirectory } from './helpers/generated-directory.mjs'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const binary = (name) => resolve(repositoryRoot, 'node_modules/.bin', name)
 const variants = {
-  fastify: resolve(repositoryRoot, 'tests/.generated/monorepo-fastify'),
-  nest: resolve(repositoryRoot, 'tests/.generated/monorepo-nest'),
+  fastify: generatedDirectory('monorepo-fastify'),
+  nest: generatedDirectory('monorepo-nest'),
 }
 
 function run(cwd, command, args) {
@@ -50,6 +51,7 @@ const probeSource = [
 
 before(() => {
   for (const [server, targetDirectory] of Object.entries(variants)) {
+    clearGeneratedDirectory(`monorepo-${server}`)
     generateProject({
       targetDirectory,
       projectName: `foundation-monorepo-${server}`,

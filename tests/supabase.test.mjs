@@ -5,10 +5,11 @@ import { dirname, resolve } from 'node:path'
 import test, { before } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
-import { generateProject } from './helpers/generate-project.mjs'
+import { generateProject } from '../skills/bootstrap-web-project/scripts/generate-project.mjs'
+import { clearGeneratedDirectory, generatedDirectory } from './helpers/generated-directory.mjs'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const projectDirectory = resolve(repositoryRoot, 'tests/.generated/fastify-supabase')
+const projectDirectory = generatedDirectory('fastify-supabase')
 const binary = (name) => resolve(repositoryRoot, 'node_modules/.bin', name)
 
 function run(command, args) {
@@ -23,6 +24,7 @@ function run(command, args) {
 let generated
 
 before(() => {
+  clearGeneratedDirectory('fastify-supabase')
   generated = generateProject({
     targetDirectory: projectDirectory,
     projectName: 'foundation-fastify-supabase-fixture',

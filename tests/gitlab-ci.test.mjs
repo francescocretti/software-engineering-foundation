@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { resolve } from 'node:path'
 import test, { before } from 'node:test'
-import { fileURLToPath } from 'node:url'
 
-import { generateProject, readVersions } from './helpers/generate-project.mjs'
+import { generateProject, readVersions } from '../skills/bootstrap-web-project/scripts/generate-project.mjs'
+import { clearGeneratedDirectory, generatedDirectory } from './helpers/generated-directory.mjs'
 
-const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const withCi = resolve(repositoryRoot, 'tests/.generated/fastify-gitlab-ci')
-const withoutCi = resolve(repositoryRoot, 'tests/.generated/fastify')
+const withCi = generatedDirectory('fastify-gitlab-ci')
+const withoutCi = generatedDirectory('fastify')
 
 before(() => {
+  clearGeneratedDirectory('fastify-gitlab-ci')
   generateProject({
     targetDirectory: withCi,
     projectName: 'foundation-gitlab-ci-fixture',

@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import {
   chmodSync,
   existsSync,
@@ -9,12 +11,42 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import process from 'node:process'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { parseArgs } from 'node:util'
 
-const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
-const assetsRoot = resolve(repositoryRoot, 'skills/bootstrap-web-project/assets')
+const assetsRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../assets')
 const placeholderPattern = /\{\{([A-Z0-9_]+)\}\}/g
 const appendableFiles = new Set(['.gitignore', '.env.example'])
+const rootOnlyScripts = new Set(['lint', 'lint:fix', 'validate', 'postinstall'])
+const tolerableTargetEntries = new Set(['.git'])
+
+export function readVersions() {
+  return JSON.parse(readFileSync(resolve(assetsRoot, 'tooling/versions.json'), 'utf8'))
+}
+
+/**
+ * The generator never deletes anything. The target must not exist yet or must
+ * be an empty directory; a freshly initialized Git repository is accepted.
+ */
+function ensureWritableTarget(targetDirectory) {
+  if (!existsSync(targetDirectory)) {
+    return
+  }
+  if (!statSync(targetDirectory).isDirectory()) {
+    throw new Error(`target is not a directory: ${targetDirectory}`)
+  }
+
+  const blocking = readdirSync(targetDirectory).filter(
+    (entry) => !tolerableTargetEntries.has(entry),
+  )
+  if (blocking.length > 0) {
+    throw new Error(
+      `target directory is not empty: ${targetDirectory} `
+      + `(found ${blocking.slice(0, 5).join(', ')}). Refusing to overwrite existing files.`,
+    )
+  }
+}
 
 /**
  * Profile fragments of .yarnrc.yml contain only a packageExtensions section.
@@ -27,17 +59,15 @@ function mergeYarnrc(existing, incoming) {
   const tail = start < 0 ? '' : existing.slice(start + marker.length)
 
   if (start < 0 || /^[A-Za-z]/m.test(tail)) {
-    throw new Error('.yarnrc.yml must end with its packageExtensions section to accept fragments')
+    throw new Error(
+      '.yarnrc.yml must end with its packageExtensions section to accept fragments',
+    )
   }
   if (!incoming.startsWith('packageExtensions:\n')) {
     throw new Error('.yarnrc.yml fragments must contain only a packageExtensions section')
   }
 
   return `${existing.trimEnd()}\n${incoming.slice('packageExtensions:\n'.length)}`
-}
-
-export function readVersions() {
-  return JSON.parse(readFileSync(resolve(assetsRoot, 'tooling/versions.json'), 'utf8'))
 }
 
 function substitute(text, values, sourcePath) {
@@ -66,7 +96,11 @@ function mergeManifests(existing, incoming) {
 }
 
 function writeTemplateFile(sourcePath, targetPath, values) {
-  const content = substitute(readFileSync(sourcePath, 'utf8'), values, relative(assetsRoot, sourcePath))
+  const content = substitute(
+    readFileSync(sourcePath, 'utf8'),
+    values,
+    relative(assetsRoot, sourcePath),
+  )
   const fileName = targetPath.slice(targetPath.lastIndexOf('/') + 1)
 
   mkdirSync(dirname(targetPath), { recursive: true })
@@ -88,7 +122,9 @@ function writeTemplateFile(sourcePath, targetPath, values) {
       writeFileSync(targetPath, mergeYarnrc(readFileSync(targetPath, 'utf8'), content))
       return
     }
-    throw new Error(`profile conflict: ${relative(assetsRoot, sourcePath)} already exists in target`)
+    throw new Error(
+      `profile conflict: ${relative(assetsRoot, sourcePath)} already exists in target`,
+    )
   }
 
   writeFileSync(targetPath, content)
@@ -109,6 +145,16 @@ function copyTemplateTree(sourceDirectory, targetDirectory, values) {
   }
 }
 
+function requireProfile(versions, profileName) {
+  const profile = versions.profiles[profileName]
+  if (profile === undefined) {
+    throw new Error(
+      `unknown profile ${profileName}; known: ${Object.keys(versions.profiles).join(', ')}`,
+    )
+  }
+  return profile
+}
+
 function collectGroups(versions, groupNames) {
   return groupNames.reduce((merged, groupName) => {
     const group = versions[groupName]
@@ -119,7 +165,48 @@ function collectGroups(versions, groupNames) {
   }, {})
 }
 
-const rootOnlyScripts = new Set(['lint', 'lint:fix', 'validate', 'postinstall'])
+/**
+ * Lists every profile the generation applies, in application order, and maps
+ * each workspace directory to its profile so the project manifest records the
+ * complete composition rather than only the root profiles.
+ */
+function describeComposition(versions, profiles, workspaces) {
+  const appliedProfiles = []
+  const workspaceMap = {}
+  const hasMonorepo = profiles.some(
+    (profileName) => requireProfile(versions, profileName).layout === 'monorepo',
+  )
+
+  if (!hasMonorepo && Object.keys(workspaces).length > 0) {
+    throw new Error('client and server workspaces require the monorepo profile')
+  }
+
+  for (const profileName of profiles) {
+    const profile = requireProfile(versions, profileName)
+    appliedProfiles.push(profileName)
+
+    if (profile.layout === 'monorepo') {
+      for (const workspaceName of Object.keys(profile.workspaces)) {
+        if (workspaceName === 'shared') {
+          continue
+        }
+        if (!(workspaceName in workspaces)) {
+          throw new Error(`the monorepo profile requires a ${workspaceName} workspace profile`)
+        }
+      }
+      for (const [workspaceName, workspaceProfileName] of Object.entries({
+        ...workspaces,
+        shared: profile.sharedProfile,
+      })) {
+        requireProfile(versions, workspaceProfileName)
+        appliedProfiles.push(workspaceProfileName)
+        workspaceMap[profile.workspaces[workspaceName]] = workspaceProfileName
+      }
+    }
+  }
+
+  return { appliedProfiles, workspaceMap }
+}
 
 /**
  * Applies a stack profile inside a workspace directory: the template is copied
@@ -138,10 +225,7 @@ function generateWorkspace({
   workspaceName,
   workspaceProfileName,
 }) {
-  const profile = versions.profiles[workspaceProfileName]
-  if (profile === undefined) {
-    throw new Error(`unknown profile ${workspaceProfileName}`)
-  }
+  const profile = requireProfile(versions, workspaceProfileName)
 
   mkdirSync(targetDirectory, { recursive: true })
   copyTemplateTree(resolve(assetsRoot, profile.template), targetDirectory, values)
@@ -150,7 +234,10 @@ function generateWorkspace({
   const yarnrcFragment = resolve(targetDirectory, '.yarnrc.yml')
   if (existsSync(yarnrcFragment)) {
     const rootYarnrc = resolve(rootDirectory, '.yarnrc.yml')
-    writeFileSync(rootYarnrc, mergeYarnrc(readFileSync(rootYarnrc, 'utf8'), readFileSync(yarnrcFragment, 'utf8')))
+    writeFileSync(
+      rootYarnrc,
+      mergeYarnrc(readFileSync(rootYarnrc, 'utf8'), readFileSync(yarnrcFragment, 'utf8')),
+    )
     rmSync(yarnrcFragment)
   }
 
@@ -175,41 +262,11 @@ function generateWorkspace({
 }
 
 /**
- * Lists every profile the generation applies, in application order, and maps
- * each workspace directory to its profile so the project manifest records the
- * complete composition rather than only the root profiles.
- */
-function describeComposition(versions, profiles, workspaces) {
-  const appliedProfiles = []
-  const workspaceMap = {}
-
-  for (const profileName of profiles) {
-    const profile = versions.profiles[profileName]
-    if (profile === undefined) {
-      throw new Error(`unknown profile ${profileName}`)
-    }
-    appliedProfiles.push(profileName)
-
-    if (profile.layout === 'monorepo') {
-      for (const [workspaceName, workspaceProfileName] of Object.entries({
-        ...workspaces,
-        shared: profile.sharedProfile,
-      })) {
-        appliedProfiles.push(workspaceProfileName)
-        workspaceMap[profile.workspaces[workspaceName]] = workspaceProfileName
-      }
-    }
-  }
-
-  return { appliedProfiles, workspaceMap }
-}
-
-/**
  * Materializes one or more profiles exactly as the skill documents it: common
  * assets, shared tooling copied into `.config/`, Git hooks, each stack
  * template in order, and a manifest merged from `versions.json`. Overlay
  * profiles append to `.gitignore` and `.env.example` and merge scripts. The
- * optional CI asset is copied last.
+ * optional CI asset is copied last. The target must be empty or absent.
  */
 export function generateProject({
   targetDirectory,
@@ -221,17 +278,27 @@ export function generateProject({
   securityLevel = 'R1',
   securityRationale = 'Public demonstration content without authentication or personal data.',
 }) {
+  if (typeof projectName !== 'string' || !/^[a-z0-9][a-z0-9._-]*$/.test(projectName)) {
+    throw new Error('projectName must be a lowercase package name without a scope')
+  }
+  if (!Array.isArray(profiles) || profiles.length === 0) {
+    throw new Error('at least one profile is required')
+  }
+  if (ci !== 'none' && !existsSync(resolve(assetsRoot, 'ci', ci))) {
+    throw new Error(`unknown CI profile ${ci}`)
+  }
+  if (!['R1', 'R2', 'R3'].includes(securityLevel)) {
+    throw new Error('securityLevel must be R1, R2 or R3')
+  }
+
   const versions = readVersions()
-  const foundationVersion = JSON.parse(
-    readFileSync(resolve(repositoryRoot, 'package.json'), 'utf8'),
-  ).version
   const { appliedProfiles, workspaceMap } = describeComposition(versions, profiles, workspaces)
   const values = {
     ACCESSIBILITY_INVARIANTS:
       '- Meet WCAG 2.2 AA for every user-visible page, state and viewport.',
     ACCESSIBILITY_TARGET: 'WCAG 2.2 AA',
     CI_PROFILE: ci,
-    FOUNDATION_VERSION: foundationVersion,
+    FOUNDATION_VERSION: versions.foundationVersion,
     HTML_LANG: htmlLang,
     NODE_ENGINES: `>=${versions.runtime.nodeMajor}.0.0 <${versions.runtime.nodeMajor + 1}`,
     NODE_MAJOR: String(versions.runtime.nodeMajor),
@@ -247,17 +314,13 @@ export function generateProject({
   const rootValues = { ...values, CONFIG_ROOT: './.config' }
   const workspaceValues = { ...values, CONFIG_ROOT: '../../.config' }
 
-  rmSync(targetDirectory, { force: true, recursive: true })
+  ensureWritableTarget(targetDirectory)
   mkdirSync(targetDirectory, { recursive: true })
 
   const eslintModules = new Set(
-    [...profiles, ...Object.values(workspaces)].flatMap((profileName) => {
-      const profile = versions.profiles[profileName]
-      if (profile === undefined) {
-        throw new Error(`unknown profile ${profileName}`)
-      }
-      return profile.eslintModules
-    }),
+    [...profiles, ...Object.values(workspaces)].flatMap(
+      (profileName) => requireProfile(versions, profileName).eslintModules,
+    ),
   )
 
   copyTemplateTree(resolve(assetsRoot, 'common'), targetDirectory, rootValues)
@@ -283,10 +346,7 @@ export function generateProject({
   let resolutions = {}
 
   for (const profileName of profiles) {
-    const profile = versions.profiles[profileName]
-    if (profile === undefined) {
-      throw new Error(`unknown profile ${profileName}`)
-    }
+    const profile = requireProfile(versions, profileName)
     copyTemplateTree(resolve(assetsRoot, profile.template), targetDirectory, rootValues)
     dependencies = { ...dependencies, ...collectGroups(versions, profile.dependencies) }
     devDependencies = { ...devDependencies, ...collectGroups(versions, profile.devDependencies) }
@@ -295,7 +355,7 @@ export function generateProject({
     if (profile.layout === 'monorepo') {
       const selected = { ...workspaces, shared: profile.sharedProfile }
       for (const [workspaceName, workspaceProfileName] of Object.entries(selected)) {
-        const workspaceProfile = versions.profiles[workspaceProfileName]
+        const workspaceProfile = requireProfile(versions, workspaceProfileName)
         resolutions = {
           ...resolutions,
           ...collectGroups(versions, workspaceProfile.resolutions ?? []),
@@ -328,5 +388,82 @@ export function generateProject({
   }
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
 
-  return { targetDirectory, values, versions }
+  return { targetDirectory, values, versions, appliedProfiles, workspaceMap }
+}
+
+const usage = `usage: generate-project.mjs --target <dir> --name <package-name> --profile <profile>...
+  [--client <profile>] [--server <profile>] [--ci gitlab]
+  [--security-level R1|R2|R3] [--security-rationale <text>] [--html-lang <bcp47>]
+
+Profiles are applied in order; overlays such as supabase follow a base profile.
+The monorepo profile requires --client and --server. The target directory must
+not exist or must be empty (a fresh .git directory is tolerated).`
+
+function runCli(argv) {
+  const { values } = parseArgs({
+    args: argv,
+    options: {
+      'target': { type: 'string' },
+      'name': { type: 'string' },
+      'profile': { type: 'string', multiple: true },
+      'client': { type: 'string' },
+      'server': { type: 'string' },
+      'ci': { type: 'string', default: 'none' },
+      'security-level': { type: 'string', default: 'R1' },
+      'security-rationale': { type: 'string' },
+      'html-lang': { type: 'string', default: 'en' },
+      'help': { type: 'boolean', default: false },
+    },
+  })
+
+  if (values.help) {
+    process.stdout.write(`${usage}\n`)
+    return
+  }
+  if (values.target === undefined || values.name === undefined || values.profile === undefined) {
+    throw new Error(`--target, --name and at least one --profile are required\n${usage}`)
+  }
+
+  const workspaces = {}
+  if (values.client !== undefined) {
+    workspaces.client = values.client
+  }
+  if (values.server !== undefined) {
+    workspaces.server = values.server
+  }
+
+  const result = generateProject({
+    targetDirectory: resolve(values.target),
+    projectName: values.name,
+    profiles: values.profile,
+    workspaces,
+    ci: values.ci,
+    htmlLang: values['html-lang'],
+    securityLevel: values['security-level'],
+    ...(values['security-rationale'] === undefined
+      ? {}
+      : { securityRationale: values['security-rationale'] }),
+  })
+
+  process.stdout.write(
+    [
+      `generated ${result.targetDirectory}`,
+      `profiles: ${result.appliedProfiles.join(', ')}`,
+      `workspaces: ${JSON.stringify(result.workspaceMap)}`,
+      `security: ${values['security-level']}; ci: ${values.ci}`,
+      'next: ensure-git-root.mjs, corepack yarn install, corepack yarn validate',
+    ].join('\n') + '\n',
+  )
+}
+
+const invokedDirectly = process.argv[1] !== undefined
+  && import.meta.url === pathToFileURL(resolve(process.argv[1])).href
+
+if (invokedDirectly) {
+  try {
+    runCli(process.argv.slice(2))
+  } catch (error) {
+    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)
+    process.exitCode = 1
+  }
 }
