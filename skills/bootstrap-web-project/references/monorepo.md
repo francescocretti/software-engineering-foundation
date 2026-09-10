@@ -24,7 +24,7 @@ decisions are recorded in ADR 0008 of the foundation repository.
    `apps/server` and the `shared` profile into `packages/shared`. In each
    workspace set `{{CONFIG_ROOT}}` to `../../.config`, name the package
    `@<project>/<workspace>`, remove `packageManager`, `engines` and the
-   `lint`, `lint:fix`, `validate` and `prepare` scripts, delete the workspace
+   `lint`, `lint:fix`, `validate` and `postinstall` scripts, delete the workspace
    `eslint.config.mjs`, and add `"@<project>/shared": "workspace:^"` to both
    applications. Workspace `devDependencies` omit the groups already present
    at the root.

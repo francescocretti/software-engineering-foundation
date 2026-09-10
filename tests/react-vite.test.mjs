@@ -76,6 +76,14 @@ test('the generated React + Vite project is complete and fully resolved', () => 
   for (const script of ['lint', 'lint:fix', 'typecheck', 'test', 'build', 'validate']) {
     assert.ok(script in manifest.scripts, `missing script contract: ${script}`)
   }
+  assert.equal(manifest.scripts.postinstall, 'husky', 'Yarn Modern runs postinstall, not prepare')
+  assert.equal('prepare' in manifest.scripts, false)
+
+  assert.doesNotMatch(
+    readFileSync(resolve(projectDirectory, '.yarnrc.yml'), 'utf8'),
+    /fastify/,
+    'profile-specific package extensions stay with their profile',
+  )
 
   const record = readFileSync(resolve(projectDirectory, '.engineering-foundation.yml'), 'utf8')
   assert.match(record, /^profiles: \["react-vite"\]$/m)

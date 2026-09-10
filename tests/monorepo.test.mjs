@@ -84,7 +84,7 @@ test('the monorepo layout follows STRUCT-SHAPE-001 with root-owned tooling', () 
 
   const rootManifest = readJson(resolve(root, 'package.json'))
   assert.deepEqual(rootManifest.workspaces, ['apps/*', 'packages/*'])
-  assert.equal(rootManifest.scripts.prepare, 'husky')
+  assert.equal(rootManifest.scripts.postinstall, 'husky', 'Yarn Modern runs postinstall, not prepare')
   assert.ok('db:test' in rootManifest.scripts, 'the Supabase overlay lands on the root')
   assert.ok('eslint' in rootManifest.devDependencies)
   assert.ok('eslint-plugin-jsx-a11y' in rootManifest.devDependencies)
@@ -99,7 +99,7 @@ test('the monorepo layout follows STRUCT-SHAPE-001 with root-owned tooling', () 
     for (const field of ['packageManager', 'engines']) {
       assert.equal(field in manifest, false, `${manifest.name} must not declare ${field}`)
     }
-    for (const script of ['lint', 'prepare', 'validate']) {
+    for (const script of ['lint', 'postinstall', 'prepare', 'validate']) {
       assert.equal(script in manifest.scripts, false, `${manifest.name} must not declare ${script}`)
     }
     assert.equal('eslint' in manifest.devDependencies, false, 'lint tooling is hoisted')
@@ -110,6 +110,8 @@ test('the monorepo layout follows STRUCT-SHAPE-001 with root-owned tooling', () 
   assert.ok('fastify' in server.dependencies)
   assert.deepEqual(Object.keys(shared.dependencies), ['zod'])
 
+  assert.equal(existsSync(resolve(root, 'apps/server/.yarnrc.yml')), false, 'Yarn config is root-only')
+  assert.match(readFileSync(resolve(root, '.yarnrc.yml'), 'utf8'), /^ {2}fastify-type-provider-zod@\*:$/m)
   assert.match(
     readFileSync(resolve(root, 'apps/client/tsconfig.app.json'), 'utf8'),
     /"extends": "\.\.\/\.\.\/\.config\/typescript\/tsconfig\.browser\.json"/,

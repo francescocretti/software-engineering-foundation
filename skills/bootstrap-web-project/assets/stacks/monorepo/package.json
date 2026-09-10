@@ -15,7 +15,7 @@
     "typecheck": "yarn workspaces foreach -At --exclude {{PROJECT_NAME}} run typecheck",
     "test": "yarn workspaces foreach -At --exclude {{PROJECT_NAME}} run test",
     "validate": "yarn lint && yarn build && yarn typecheck && yarn test",
-    "prepare": "husky"
+    "postinstall": "husky"
   },
   "dependencies": {},
   "devDependencies": {}

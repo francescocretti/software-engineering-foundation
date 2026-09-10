@@ -16,6 +16,26 @@ const assetsRoot = resolve(repositoryRoot, 'skills/bootstrap-web-project/assets'
 const placeholderPattern = /\{\{([A-Z0-9_]+)\}\}/g
 const appendableFiles = new Set(['.gitignore', '.env.example'])
 
+/**
+ * Profile fragments of .yarnrc.yml contain only a packageExtensions section.
+ * The common file keeps packageExtensions as its last section, so a fragment
+ * is merged by appending its entries under the existing key.
+ */
+function mergeYarnrc(existing, incoming) {
+  const marker = '\npackageExtensions:\n'
+  const start = existing.indexOf(marker)
+  const tail = start < 0 ? '' : existing.slice(start + marker.length)
+
+  if (start < 0 || /^[A-Za-z]/m.test(tail)) {
+    throw new Error('.yarnrc.yml must end with its packageExtensions section to accept fragments')
+  }
+  if (!incoming.startsWith('packageExtensions:\n')) {
+    throw new Error('.yarnrc.yml fragments must contain only a packageExtensions section')
+  }
+
+  return `${existing.trimEnd()}\n${incoming.slice('packageExtensions:\n'.length)}`
+}
+
 export function readVersions() {
   return JSON.parse(readFileSync(resolve(assetsRoot, 'tooling/versions.json'), 'utf8'))
 }
@@ -64,6 +84,10 @@ function writeTemplateFile(sourcePath, targetPath, values) {
       writeFileSync(targetPath, `${readFileSync(targetPath, 'utf8').trimEnd()}\n\n${content}`)
       return
     }
+    if (fileName === '.yarnrc.yml') {
+      writeFileSync(targetPath, mergeYarnrc(readFileSync(targetPath, 'utf8'), content))
+      return
+    }
     throw new Error(`profile conflict: ${relative(assetsRoot, sourcePath)} already exists in target`)
   }
 
@@ -95,7 +119,7 @@ function collectGroups(versions, groupNames) {
   }, {})
 }
 
-const rootOnlyScripts = new Set(['lint', 'lint:fix', 'validate', 'prepare'])
+const rootOnlyScripts = new Set(['lint', 'lint:fix', 'validate', 'postinstall'])
 
 /**
  * Applies a stack profile inside a workspace directory: the template is copied
@@ -105,6 +129,7 @@ const rootOnlyScripts = new Set(['lint', 'lint:fix', 'validate', 'prepare'])
  */
 function generateWorkspace({
   hoistedGroups,
+  rootDirectory,
   scope,
   targetDirectory,
   values,
@@ -121,6 +146,13 @@ function generateWorkspace({
   mkdirSync(targetDirectory, { recursive: true })
   copyTemplateTree(resolve(assetsRoot, profile.template), targetDirectory, values)
   rmSync(resolve(targetDirectory, 'eslint.config.mjs'), { force: true })
+
+  const yarnrcFragment = resolve(targetDirectory, '.yarnrc.yml')
+  if (existsSync(yarnrcFragment)) {
+    const rootYarnrc = resolve(rootDirectory, '.yarnrc.yml')
+    writeFileSync(rootYarnrc, mergeYarnrc(readFileSync(rootYarnrc, 'utf8'), readFileSync(yarnrcFragment, 'utf8')))
+    rmSync(yarnrcFragment)
+  }
 
   const manifestPath = resolve(targetDirectory, 'package.json')
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
@@ -186,12 +218,27 @@ export function generateProject({
   rmSync(targetDirectory, { force: true, recursive: true })
   mkdirSync(targetDirectory, { recursive: true })
 
-  copyTemplateTree(resolve(assetsRoot, 'common'), targetDirectory, rootValues)
-  copyTemplateTree(
-    resolve(assetsRoot, 'tooling/eslint'),
-    resolve(targetDirectory, '.config/eslint'),
-    rootValues,
+  const eslintModules = new Set(
+    [...profiles, ...Object.values(workspaces)].flatMap((profileName) => {
+      const profile = versions.profiles[profileName]
+      if (profile === undefined) {
+        throw new Error(`unknown profile ${profileName}`)
+      }
+      return profile.eslintModules
+    }),
   )
+
+  copyTemplateTree(resolve(assetsRoot, 'common'), targetDirectory, rootValues)
+  // Only the ESLint modules a profile uses are copied: an unused module would
+  // import plugins the generated project does not install.
+  mkdirSync(resolve(targetDirectory, '.config/eslint'), { recursive: true })
+  for (const moduleName of eslintModules) {
+    writeTemplateFile(
+      resolve(assetsRoot, 'tooling/eslint', `${moduleName}.mjs`),
+      resolve(targetDirectory, '.config/eslint', `${moduleName}.mjs`),
+      rootValues,
+    )
+  }
   copyTemplateTree(
     resolve(assetsRoot, 'tooling/typescript'),
     resolve(targetDirectory, '.config/typescript'),
@@ -216,6 +263,7 @@ export function generateProject({
       for (const [workspaceName, workspaceProfileName] of Object.entries(selected)) {
         generateWorkspace({
           hoistedGroups: profile.devDependencies,
+          rootDirectory: targetDirectory,
           scope: projectName,
           targetDirectory: resolve(targetDirectory, profile.workspaces[workspaceName]),
           values: workspaceValues,

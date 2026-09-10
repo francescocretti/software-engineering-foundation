@@ -8,6 +8,13 @@
   "profiles": {
     "react-vite": {
       "template": "stacks/react-vite",
+      "eslintModules": [
+        "base",
+        "typescript",
+        "node",
+        "stylistic",
+        "react"
+      ],
       "dependencies": [
         "reactDependencies"
       ],
@@ -20,6 +27,12 @@
     },
     "fastify": {
       "template": "stacks/fastify",
+      "eslintModules": [
+        "base",
+        "typescript",
+        "node",
+        "stylistic"
+      ],
       "dependencies": [
         "fastifyDependencies"
       ],
@@ -31,6 +44,12 @@
     },
     "nest": {
       "template": "stacks/nest",
+      "eslintModules": [
+        "base",
+        "typescript",
+        "node",
+        "stylistic"
+      ],
       "dependencies": [
         "nestDependencies"
       ],
@@ -43,6 +62,7 @@
     "supabase": {
       "template": "stacks/supabase",
       "overlay": true,
+      "eslintModules": [],
       "dependencies": [
         "supabaseDependencies"
       ],
@@ -52,6 +72,12 @@
     },
     "shared": {
       "template": "stacks/shared",
+      "eslintModules": [
+        "base",
+        "typescript",
+        "node",
+        "stylistic"
+      ],
       "dependencies": [
         "sharedDependencies"
       ],
@@ -68,6 +94,13 @@
         "shared": "packages/shared"
       },
       "sharedProfile": "shared",
+      "eslintModules": [
+        "base",
+        "typescript",
+        "node",
+        "stylistic",
+        "react"
+      ],
       "dependencies": [],
       "devDependencies": [
         "commonDevDependencies",

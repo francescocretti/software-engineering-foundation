@@ -197,6 +197,14 @@ test('the dependency matrix stays exact and on verified compatibility majors', (
     for (const groupName of [...profile.dependencies, ...profile.devDependencies]) {
       assert.ok(groupName in versions, `${profileName} references unknown group ${groupName}`)
     }
+    for (const moduleName of profile.eslintModules) {
+      assert.ok(
+        existsSync(
+          resolve(repositoryRoot, 'skills/bootstrap-web-project/assets/tooling/eslint', `${moduleName}.mjs`),
+        ),
+        `${profileName} references unknown ESLint module ${moduleName}`,
+      )
+    }
   }
 
   assert.equal(versions.runtime.nodeMajor, 24)

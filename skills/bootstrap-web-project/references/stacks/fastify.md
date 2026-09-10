@@ -37,9 +37,10 @@ The production template lives in `assets/stacks/fastify/`:
 5. Install with Corepack and run `corepack yarn validate`, then
    `corepack yarn dev` to confirm the server boots with `.env`.
 
-The shared `.yarnrc.yml` marks the OpenAPI peers of
-`fastify-type-provider-zod` optional; keep that extension while the package
-declares them as required.
+The profile ships a `.yarnrc.yml` fragment that marks the OpenAPI peers of
+`fastify-type-provider-zod` optional. Merge it under the `packageExtensions`
+section of the root `.yarnrc.yml` and keep it while the package declares those
+peers as required.
 
 ## `FASTIFY-SCHEMA-001` — every route declares its contract
 

@@ -50,6 +50,12 @@ test('the generated Fastify project is complete and fully resolved', () => {
     assert.ok(existsSync(resolve(projectDirectory, file)), `missing generated file: ${file}`)
   }
 
+  assert.equal(
+    existsSync(resolve(projectDirectory, '.config/eslint/react.mjs')),
+    false,
+    'backend projects must not copy the React ESLint module',
+  )
+
   const manifest = JSON.parse(readFileSync(resolve(projectDirectory, 'package.json'), 'utf8'))
   assert.equal(manifest.type, 'module')
   assert.deepEqual(manifest.dependencies, generated.versions.fastifyDependencies)
@@ -60,6 +66,11 @@ test('the generated Fastify project is complete and fully resolved', () => {
 
   const envExample = readFileSync(resolve(projectDirectory, '.env.example'), 'utf8')
   assert.doesNotMatch(envExample, /(KEY|SECRET|TOKEN|PASSWORD)=\S/i)
+
+  const yarnrc = readFileSync(resolve(projectDirectory, '.yarnrc.yml'), 'utf8')
+  assert.equal(yarnrc.match(/^packageExtensions:$/gm)?.length, 1, 'one packageExtensions section')
+  assert.match(yarnrc, /^ {2}"@commitlint\/load@\*":$/m)
+  assert.match(yarnrc, /^ {2}fastify-type-provider-zod@\*:$/m)
 })
 
 test('the generated Fastify project passes the shared lint gate', () => {

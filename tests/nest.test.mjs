@@ -50,6 +50,12 @@ test('the generated Nest project is complete and fully resolved', () => {
     assert.ok(existsSync(resolve(projectDirectory, file)), `missing generated file: ${file}`)
   }
 
+  assert.equal(
+    existsSync(resolve(projectDirectory, '.config/eslint/react.mjs')),
+    false,
+    'backend projects must not copy the React ESLint module',
+  )
+
   const manifest = JSON.parse(readFileSync(resolve(projectDirectory, 'package.json'), 'utf8'))
   assert.equal(manifest.type, undefined, 'Nest 11 projects stay CommonJS')
   assert.deepEqual(manifest.dependencies, generated.versions.nestDependencies)

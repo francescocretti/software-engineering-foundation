@@ -33,8 +33,10 @@ prefer the newest compatible version old enough to pass rather than bypassing
 the gate.
 
 The shared `.yarnrc.yml` contains a documented `packageExtensions` workaround
-for peers omitted by `@commitlint/load`. Re-check and remove the workaround when
-upgrading commitlint; do not accumulate unexplained package extensions.
+for peers omitted by `@commitlint/load`, and keeps `packageExtensions` as its
+last section so a profile can contribute its own entries through a
+`.yarnrc.yml` fragment. Re-check and remove each workaround when upgrading the
+package it patches; do not accumulate unexplained package extensions.
 
 ## Files to apply
 
@@ -42,8 +44,10 @@ For every JavaScript or TypeScript project:
 
 1. Copy `.node-version` and `.yarnrc.yml` from `assets/common/` to preserve the
    runtime major, `node-modules` linker and 24-hour package-age gate.
-2. Copy the modules under `assets/tooling/eslint/` that match the profile into
-   `.config/eslint/`.
+2. Copy the modules listed under `eslintModules` for the selected profiles in
+   `assets/tooling/versions.json` from `assets/tooling/eslint/` into
+   `.config/eslint/`. An unused module would import plugins the project does
+   not install.
 3. Compose them from a root `eslint.config.mjs`. Always include `base.mjs` and
    `stylistic.mjs`; TypeScript projects also include `typescript.mjs`.
 4. Copy the applicable files from `assets/tooling/typescript/`.
@@ -56,8 +60,12 @@ For every JavaScript or TypeScript project:
    `template` directory, its runtime `dependencies` groups and its
    `devDependencies` groups. Overlay profiles such as `supabase` are applied
    after a base profile. Then create the scripts below.
-7. Add `"prepare": "husky"`, install once and ensure Git records the hook files
-   as executable.
+7. Add `"postinstall": "husky"`, install once and ensure Git records the hook
+   files as executable. Yarn Modern does not run `prepare`, so `postinstall` is
+   the only install hook that wires Husky. Yarn's default `enableScripts: false`
+   disables third-party install scripts only; the project's own `postinstall`
+   still runs and the templates need no third-party build script. If `HUSKY=0`
+   was set during installation, run `corepack yarn husky` once afterwards.
 
 React profiles include `react.mjs` and the Vite refresh configuration; Node
 backends and Node-run configuration or test files include `node.mjs` with
@@ -77,7 +85,7 @@ public names:
   "lint:fix": "eslint . --fix --max-warnings=0",
   "typecheck": "tsc --noEmit",
   "validate": "yarn lint && yarn typecheck && yarn test && yarn build",
-  "prepare": "husky"
+  "postinstall": "husky"
 }
 ```
 
