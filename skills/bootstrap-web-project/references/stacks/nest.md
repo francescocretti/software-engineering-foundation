@@ -91,7 +91,7 @@ implements.
   and make services reusable across transports.
 - **Verification:** Review controllers for logic beyond mapping and services
   for direct `process.env` access.
-- **Sources:** [Nest modules](https://docs.nestjs.com/modules), [Nest providers](https://docs.nestjs.com/providers), `bailu-api`.
+- **Sources:** [Nest modules](https://docs.nestjs.com/modules), [Nest providers](https://docs.nestjs.com/providers), practitioner experience with Nest services.
 - **Exceptions:** Cross-cutting infrastructure may be grouped by technical
   responsibility under `src/common/`.
 

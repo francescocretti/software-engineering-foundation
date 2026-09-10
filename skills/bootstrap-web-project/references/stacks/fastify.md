@@ -77,7 +77,7 @@ peers as required.
   is declared once at the root.
 - **Verification:** Review `buildApp()` registrations and confirm hooks and
   handlers added by cross-cutting plugins reach every route in tests.
-- **Sources:** [Fastify plugins guide](https://fastify.dev/docs/latest/Guides/Plugins-Guide/), [Fastify encapsulation](https://fastify.dev/docs/latest/Reference/Encapsulation/), `fta-admin`.
+- **Sources:** [Fastify plugins guide](https://fastify.dev/docs/latest/Guides/Plugins-Guide/), [Fastify encapsulation](https://fastify.dev/docs/latest/Reference/Encapsulation/), practitioner experience with Fastify services.
 - **Exceptions:** A very small service may register routes directly in
   `buildApp()` until a second feature exists.
 

@@ -322,7 +322,7 @@ formal audit to trace every Level A and AA success criterion.
   and keyboard users unaware that navigation completed.
 - **Verification:** Navigate routes with keyboard and screen reader; confirm the
   title, history behavior, announcement and post-navigation focus.
-- **Sources:** [WCAG 2.2 — 2.4.2, 2.4.3 and 4.1.3](https://www.w3.org/TR/WCAG22/), React SPA experience from `bailu-admin` and `fta-admin`.
+- **Sources:** [WCAG 2.2 — 2.4.2, 2.4.3 and 4.1.3](https://www.w3.org/TR/WCAG22/), practitioner experience with React single-page applications.
 - **Exceptions:** None for title and orientation; the exact focus strategy may
   vary with the interaction and must be tested.
 
@@ -338,6 +338,6 @@ formal audit to trace every Level A and AA success criterion.
   code accessible without relying on every caller to reconstruct the contract.
 - **Verification:** Test each primitive's states in isolation and audit escape
   hatches or polymorphic APIs that can remove semantics.
-- **Sources:** [ARIA APG patterns](https://www.w3.org/WAI/ARIA/apg/patterns/), internal design-system experience.
+- **Sources:** [ARIA APG patterns](https://www.w3.org/WAI/ARIA/apg/patterns/), practitioner experience with design systems.
 - **Exceptions:** A low-level unstyled primitive may expose responsibility to its
   caller only when the API and tests make that responsibility explicit.

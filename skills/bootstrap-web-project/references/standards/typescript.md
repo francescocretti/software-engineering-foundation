@@ -12,7 +12,7 @@
   execution and establishes a consistent baseline across projects.
 - **Verification:** Inspect the effective `tsconfig` and run `yarn typecheck`
   without emitting files.
-- **Sources:** [TypeScript `strict` option](https://www.typescriptlang.org/tsconfig/strict.html), `BlackBytes/eslint-config`.
+- **Sources:** [TypeScript `strict` option](https://www.typescriptlang.org/tsconfig/strict.html), practitioner experience with strict ESLint presets.
 - **Exceptions:** A temporarily disabled stricter sub-option requires a tracked
   migration plan; disabling `strict` itself is not permitted.
 
@@ -28,7 +28,7 @@
   selected and allow uncertainty to propagate.
 - **Verification:** ESLint rejects explicit `any` and unsafe operations; review
   assertions and suppression comments at boundaries.
-- **Sources:** [TypeScript `unknown`](https://www.typescriptlang.org/docs/handbook/2/functions.html#unknown), `BlackBytes/eslint-config`.
+- **Sources:** [TypeScript `unknown`](https://www.typescriptlang.org/docs/handbook/2/functions.html#unknown), practitioner experience with strict ESLint presets.
 - **Exceptions:** An incompatible third-party boundary may use the narrowest
   escape possible with a reason and a typed outward-facing contract.
 
@@ -44,7 +44,7 @@
   accidental public-contract changes.
 - **Verification:** Review exported APIs for stable types and local code for
   redundant annotations that obscure intent.
-- **Sources:** [TypeScript type inference](https://www.typescriptlang.org/docs/handbook/type-inference.html), internal repository synthesis.
+- **Sources:** [TypeScript type inference](https://www.typescriptlang.org/docs/handbook/type-inference.html), practitioner experience with production TypeScript applications.
 - **Exceptions:** Framework conventions or generated declarations may determine
   the appropriate annotation style.
 
@@ -60,7 +60,7 @@
   from convention into the type system.
 - **Verification:** Review stateful models and ensure switches over closed unions
   fail typechecking when a case is added but not handled.
-- **Sources:** [TypeScript discriminated unions](https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions), internal repository synthesis.
+- **Sources:** [TypeScript discriminated unions](https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions), practitioner experience with production TypeScript applications.
 - **Exceptions:** Loose pass-through data must remain isolated from the domain
   model and validated before domain use.
 
@@ -76,6 +76,6 @@
   preventing obsolete suppressions from hiding future defects.
 - **Verification:** ESLint rejects undocumented suppression directives and
   broad file-level bypasses; typecheck confirms expectations still apply.
-- **Sources:** [TypeScript 3.9 release notes](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-9.html#ts-expect-error-comments), `BlackBytes/eslint-config`.
+- **Sources:** [TypeScript 3.9 release notes](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-9.html#ts-expect-error-comments), practitioner experience with strict ESLint presets.
 - **Exceptions:** Generated code may contain generator-owned directives and must
   not be edited manually.

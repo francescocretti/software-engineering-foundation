@@ -7,8 +7,9 @@
 
 The foundation must cover unauthenticated public sites, ordinary authenticated
 business applications and high-impact systems without applying a shallow common
-checklist to all three. Internal repositories provide useful implementation
-experience but are not sufficient as the normative security source.
+checklist to all three. Existing production applications provide useful
+implementation experience but are not sufficient as the normative security
+source.
 
 OWASP ASVS provides versioned, verifiable application requirements and three
 cumulative assurance levels. NIST SSDF covers development lifecycle and

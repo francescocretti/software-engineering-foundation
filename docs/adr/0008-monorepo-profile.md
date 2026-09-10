@@ -8,9 +8,9 @@
 `STRUCT-SHAPE-001` fixes the full-stack layout to `apps/client`,
 `apps/server` and `packages/shared`. The stack templates were written as
 standalone projects with their own ESLint composition, hooks and manifests.
-The internal `fta-admin` monorepo shares code through TypeScript path aliases
-to `shared/src`, which Vite and a bundler-style loader resolve but native Node
-ESM and `tsc` emit do not.
+An existing production monorepo shares code through TypeScript path aliases to
+a `shared/src` directory, which Vite and a bundler-style loader resolve but
+native Node ESM and `tsc` emit do not.
 
 ## Decision
 

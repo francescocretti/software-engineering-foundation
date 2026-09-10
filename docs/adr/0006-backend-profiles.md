@@ -8,8 +8,8 @@
 The backend profiles must start from the same quality gate as the React
 profile, share one validation language with the frontend where possible and
 satisfy the shared security baseline without framework-specific boilerplate
-that nobody reviews. Internal repositories use Fastify with hand-written zod
-parsing and Nest 11 with class-validator, Jest and Prettier.
+that nobody reviews. Existing production applications use Fastify with
+hand-written zod parsing and Nest 11 with class-validator, Jest and Prettier.
 
 At the decision date, Nest 12 has just shipped as ESM: its schematics require
 TypeScript 6, `@nestjs/throttler` still targets Nest 11, and the foundation

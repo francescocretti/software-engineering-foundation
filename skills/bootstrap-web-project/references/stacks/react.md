@@ -120,7 +120,7 @@ defines the workspace wiring.
   impact and rendering behavior predictable.
 - **Verification:** Follow a representative feature change and review effects
   and duplicated state during code review.
-- **Sources:** [React — Thinking in React](https://react.dev/learn/thinking-in-react), [React — You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect), `bailu-admin`, `fta-admin`.
+- **Sources:** [React — Thinking in React](https://react.dev/learn/thinking-in-react), [React — You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect), practitioner experience with React applications.
 - **Exceptions:** Cross-cutting infrastructure may be grouped by technical
   responsibility as allowed by `STRUCT-FEATURE-001`.
 

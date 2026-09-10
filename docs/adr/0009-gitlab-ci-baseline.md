@@ -6,7 +6,7 @@
 ## Context
 
 Teams host projects on GitLab and elsewhere, and deployment strategies differ
-per project. Internal pipelines have mixed verification with deployment and,
+per project. Existing pipelines have mixed verification with deployment and,
 in one case, printed authentication material into job logs. The foundation
 fixes CI as optional and basic.
 

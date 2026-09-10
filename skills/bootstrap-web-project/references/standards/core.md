@@ -16,7 +16,7 @@ must not weaken this baseline.
   data from spreading through otherwise typed code.
 - **Verification:** Review public interfaces and trace each external input to a
   schema or equivalent runtime validation before business logic uses it.
-- **Sources:** [OWASP Input Validation Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html), internal repository synthesis.
+- **Sources:** [OWASP Input Validation Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html), practitioner experience with production TypeScript applications.
 - **Exceptions:** Trusted compile-time-only inputs may omit runtime validation;
   document why the trust boundary is guaranteed.
 
@@ -32,7 +32,7 @@ must not weaken this baseline.
   implementation details out of public interfaces.
 - **Verification:** Exercise expected failure paths in tests and review empty
   catches, discarded promises and responses whose status contradicts failure.
-- **Sources:** [OWASP Error Handling Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html), internal repository synthesis.
+- **Sources:** [OWASP Error Handling Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html), practitioner experience with production TypeScript applications.
 - **Exceptions:** A deliberately ignored failure must have a narrow comment
   explaining why it is safe and, when relevant, an observable fallback.
 
@@ -49,7 +49,7 @@ must not weaken this baseline.
   source of sensitive-data exposure.
 - **Verification:** Review logging calls and CI output; scan representative logs
   for prohibited values and confirm errors retain safe diagnostic context.
-- **Sources:** [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html), lesson extracted from `agami-cloud`.
+- **Sources:** [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html), lesson from a production incident where a pipeline printed authentication material.
 - **Exceptions:** None for credentials or authentication material. Approved
   sensitive-data logging requires a documented purpose, minimization, access
   control and retention policy.
@@ -83,7 +83,7 @@ must not weaken this baseline.
   humans and agents more reliable.
 - **Verification:** Review changed code for mixed responsibilities, ambiguous
   names, avoidable nesting and comments that duplicate behavior.
-- **Sources:** Internal repository synthesis.
+- **Sources:** Practitioner experience with production TypeScript applications.
 - **Exceptions:** Generated code follows the generator's conventions and is not
   manually restyled.
 
@@ -99,6 +99,6 @@ must not weaken this baseline.
   to become permanent and lose context.
 - **Verification:** Search changed files for commented-out implementations and
   unqualified debt markers.
-- **Sources:** Internal repository synthesis.
+- **Sources:** Practitioner experience with production TypeScript applications.
 - **Exceptions:** A short-lived marker in an unmerged branch may omit an issue
   link when the same change resolves it.

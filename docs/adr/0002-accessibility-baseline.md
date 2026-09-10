@@ -5,10 +5,11 @@
 
 ## Context
 
-Accessibility in the internal reference repositories is not complete enough to
-serve as the future baseline. Automated tools detect only part of the problem,
-and treating accessibility as a risk-dependent or late audit activity would
-allow inaccessible foundations to spread across every generated project.
+Accessibility in the production applications reviewed for this foundation is
+not complete enough to serve as the future baseline. Automated tools detect
+only part of the problem, and treating accessibility as a risk-dependent or
+late audit activity would allow inaccessible foundations to spread across
+every generated project.
 
 ## Decision
 

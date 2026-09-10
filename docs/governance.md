@@ -37,7 +37,8 @@ Use sources in this order:
 2. OWASP, NIST and other recognized security authorities.
 3. Official language, runtime and framework documentation.
 4. Maintainer-owned documentation for selected tools.
-5. Internal repositories as evidence of proven local practice.
+5. Practitioner experience with production applications as evidence of proven
+   practice.
 6. Public skills and community material as workflow inspiration only.
 
 When sources disagree, document the conflict and the reason for the local

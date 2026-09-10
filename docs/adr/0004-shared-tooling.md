@@ -6,9 +6,10 @@
 ## Context
 
 Generated projects need strict defaults without depending on this private
-repository at runtime. Internal repositories provide useful ESLint and Git-hook
-patterns, but also contain conventions that are too project-specific and hooks
-that perform more work than the shared standard permits.
+repository at runtime. Existing production applications provide useful ESLint
+and Git-hook patterns, but also contain conventions that are too
+project-specific and hooks that perform more work than the shared standard
+permits.
 
 The latest package major is not always a compatible choice. At the decision
 date, TypeScript 7 is published while `typescript-eslint` supports TypeScript

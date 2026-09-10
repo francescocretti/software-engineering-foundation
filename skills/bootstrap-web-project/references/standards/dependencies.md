@@ -27,7 +27,7 @@
   resolution repeatable and expose undeclared lock changes.
 - **Verification:** Run an immutable install from a clean checkout and confirm it
   leaves the worktree unchanged.
-- **Sources:** [Yarn install](https://yarnpkg.com/cli/install), internal repository synthesis.
+- **Sources:** [Yarn install](https://yarnpkg.com/cli/install), practitioner experience with production TypeScript applications.
 - **Exceptions:** None for generated projects.
 
 ## `DEP-RUNTIME-001` — pin the runtime contract
@@ -42,7 +42,7 @@
   when dependencies are locked.
 - **Verification:** Compare `engines`, the runtime-version file, CI image and
   executed `node --version`.
-- **Sources:** [Node.js package `engines`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#engines), practices from `fta-admin` and `agami-cloud`.
+- **Sources:** [Node.js package `engines`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#engines), practitioner experience with production deployments.
 - **Exceptions:** A library may declare a tested version range, but every CI job
   must use an explicitly selected version from that range.
 
@@ -59,7 +59,7 @@
   compatibility cost.
 - **Verification:** Review new packages for purpose, maintenance, license,
   transitive footprint and correct dependency class.
-- **Sources:** [NIST SSDF](https://csrc.nist.gov/pubs/sp/800/218/final), internal repository synthesis.
+- **Sources:** [NIST SSDF](https://csrc.nist.gov/pubs/sp/800/218/final), practitioner experience with production TypeScript applications.
 - **Exceptions:** Temporary duplication during an incremental migration records
   an owner and removal condition.
 
@@ -75,7 +75,7 @@
   that deserve focused review.
 - **Verification:** Inspect the manifest and lock diff, review upstream release
   information and run `yarn validate`.
-- **Sources:** [NIST SSDF](https://csrc.nist.gov/pubs/sp/800/218/final), internal repository synthesis.
+- **Sources:** [NIST SSDF](https://csrc.nist.gov/pubs/sp/800/218/final), practitioner experience with production TypeScript applications.
 - **Exceptions:** A tightly coupled framework preset may update a documented set
   of packages atomically.
 

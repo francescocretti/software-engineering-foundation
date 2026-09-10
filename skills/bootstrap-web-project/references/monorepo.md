@@ -69,7 +69,7 @@ performs steps 1 to 3; overlays are added as further `--profile` options.
 - **Verification:** The generated-project test compiles the shared package and
   proves a server module consumes its schema after build; review new shared
   dependencies for runtime coupling.
-- **Sources:** [Node.js package entry points](https://nodejs.org/api/packages.html#package-entry-points), `STRUCT-SHARED-001`, `STRUCT-BOUNDARY-001`, `fta-admin`.
+- **Sources:** [Node.js package entry points](https://nodejs.org/api/packages.html#package-entry-points), `STRUCT-SHARED-001`, `STRUCT-BOUNDARY-001`, practitioner experience with TypeScript monorepos.
 - **Exceptions:** A second shared package is justified only by a distinct
   consumer set or responsibility, recorded per `STRUCT-SHARED-001`.
 

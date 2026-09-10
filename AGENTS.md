@@ -21,7 +21,6 @@ of generic tutorials.
 - Use ESLint for JavaScript and TypeScript formatting. Do not add Prettier.
 - Treat WCAG 2.2 AA as mandatory for every React profile.
 - Never print, commit, log or place secrets in fixtures.
-- Do not modify repositories used as research sources.
 
 ## Verification
 

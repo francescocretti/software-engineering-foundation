@@ -1,17 +1,9 @@
 # Source register
 
 This register records provenance. Inclusion does not mean that a source is
-adopted wholesale.
-
-## Internal repositories
-
-| Source | Primary contribution | Treatment |
-| --- | --- | --- |
-| `bailu-admin` | React organization and project structure | Extract proven patterns; do not modify source |
-| `bailu-api` | Nest and Supabase backend patterns | Extract proven patterns; do not modify source |
-| `BlackBytes/eslint-config` | Strict ESLint rule candidates | README and implementation are source of truth; curate rather than depend on it |
-| `fta-admin` | Full-stack monorepo structure and developer tooling | Extract client/server/shared patterns; do not modify source |
-| `agami-cloud` | Complex tests and CI/CD experience | Extract lessons; never reproduce secret-printing behavior |
+adopted wholesale. Where a requirement cites practitioner experience, it was
+validated against production TypeScript applications that are not public; the
+normative basis remains the public sources listed here.
 
 ## Public and official sources
 

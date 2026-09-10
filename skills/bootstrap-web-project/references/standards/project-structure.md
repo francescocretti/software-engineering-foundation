@@ -12,7 +12,7 @@
   boundaries, but needless workspace structure adds navigation and tooling cost.
 - **Verification:** Compare the selected bootstrap profile with the top-level
   layout and workspace declarations.
-- **Sources:** `bailu-admin`, `fta-admin`.
+- **Sources:** Practitioner experience with single-application and monorepo layouts.
 - **Exceptions:** A documented deployment or ownership boundary may require a
   different application or package split.
 
@@ -29,7 +29,7 @@
 - **Verification:** Follow a representative feature change and count unrelated
   top-level areas it must touch; review catch-all component, service and utility
   directories.
-- **Sources:** `bailu-admin`, `fta-admin`, Nest official architecture guidance.
+- **Sources:** Practitioner experience with capability-oriented codebases, Nest official architecture guidance.
 - **Exceptions:** Truly cross-cutting infrastructure may be grouped by technical
   responsibility.
 
@@ -45,7 +45,7 @@
   prevent accidental coupling.
 - **Verification:** ESLint and workspace checks reject restricted imports and
   cycles; review package exports and feature entrypoints.
-- **Sources:** `fta-admin`, [Node.js package entry points](https://nodejs.org/api/packages.html#package-entry-points).
+- **Sources:** [Node.js package entry points](https://nodejs.org/api/packages.html#package-entry-points), practitioner experience with workspace boundaries.
 - **Exceptions:** Tests may access a private seam only when no public behavior
   can expose the required invariant; record why.
 
@@ -61,7 +61,7 @@
   independent features.
 - **Verification:** Identify each shared module's consumers and ensure it does
   not import from a consuming application.
-- **Sources:** `fta-admin`, `bailu-admin`.
+- **Sources:** Practitioner experience with shared workspace packages.
 - **Exceptions:** A stable cross-application contract may be established before
   its second consumer when that consumer is part of an approved near-term plan.
 
@@ -77,7 +77,7 @@
   or deletions less likely.
 - **Verification:** Review whether support files can be found from their subject
   without repository-wide searching.
-- **Sources:** `bailu-admin`, `fta-admin`, `agami-cloud`.
+- **Sources:** Practitioner experience with colocated tests and fixtures.
 - **Exceptions:** Test-runner conventions may require dedicated locations for
   end-to-end suites or global setup.
 
@@ -93,6 +93,6 @@
   implementation and discourage unrelated accumulation.
 - **Verification:** Review newly introduced generic containers and confirm each
   has a single describable responsibility.
-- **Sources:** Internal repository synthesis.
+- **Sources:** Practitioner experience with production TypeScript applications.
 - **Exceptions:** Established framework filenames and narrow conventional
   utilities may retain their ecosystem names.

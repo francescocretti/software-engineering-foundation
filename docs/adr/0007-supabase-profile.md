@@ -7,7 +7,8 @@
 ## Context
 
 Supabase exposes PostgreSQL directly to clients, so authorization lives in the
-database. Internal repositories show mature migrations and RLS policies, and
+database. Existing production applications show mature migrations and RLS
+policies, and
 mix legacy `anon` and `service_role` terminology with the current publishable
 and secret keys. The Supabase CLI and live database tests require a container
 runtime and add material installation and CI cost. That conflicts with the

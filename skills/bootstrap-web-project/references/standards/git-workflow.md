@@ -16,7 +16,7 @@ when team or delivery constraints require one.
   safer.
 - **Verification:** Review the diff and commit message together; every changed
   file must contribute to the stated purpose.
-- **Sources:** Internal repository synthesis, tooling patterns from `fta-admin`.
+- **Sources:** Practitioner experience with production TypeScript repositories.
 - **Exceptions:** Mechanically generated changes may be separate commits in the
   same review when their provenance is clear.
 
@@ -31,7 +31,7 @@ when team or delivery constraints require one.
   future automated release notes without selecting a release process now.
 - **Verification:** Run commitlint against proposed commit messages and inspect
   the history for meaningful scopes and descriptions.
-- **Sources:** [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/), `fta-admin`.
+- **Sources:** [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/), practitioner experience with Conventional Commits adoption.
 - **Exceptions:** Merge and automated dependency commits may follow the hosting
   platform or bot's stable format.
 
@@ -47,7 +47,7 @@ when team or delivery constraints require one.
   needs repository-wide checks.
 - **Verification:** Time the hook on a representative change, inspect its staged
   file scope and compare it with the complete validation command.
-- **Sources:** Tooling patterns from `fta-admin` and `bailu-admin`.
+- **Sources:** Practitioner experience with Git hook tooling in production repositories.
 - **Exceptions:** A very small repository may run its full gate in the hook when
   it remains reliably fast.
 
@@ -62,7 +62,7 @@ when team or delivery constraints require one.
 - **Rationale:** Silent bypasses invalidate the shared quality contract.
 - **Verification:** Review contribution documentation and emergency changes for
   evidence that skipped checks were restored or disclosed.
-- **Sources:** Internal repository synthesis.
+- **Sources:** Practitioner experience with production TypeScript applications.
 - **Exceptions:** Recovery from a broken hook is allowed when the change repairs
   the hook and equivalent validation runs before merge.
 

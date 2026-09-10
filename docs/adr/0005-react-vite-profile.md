@@ -7,8 +7,9 @@
 
 The first stack profile must produce a React single-page application that
 passes the shared quality gate and the mandatory accessibility verification
-layers without depending on this repository at runtime. Internal repositories
-use Vite with Vitest, jsdom and Testing Library, but none of them integrates
+layers without depending on this repository at runtime. Existing production
+applications use Vite with Vitest, jsdom and Testing Library, but none of them
+integrates
 axe-core or browser-level accessibility checks, and they rely on Babel-based
 React transforms that Vite 8 no longer needs.
 
