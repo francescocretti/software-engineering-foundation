@@ -1,5 +1,6 @@
 foundationVersion: "{{FOUNDATION_VERSION}}"
 profiles: {{PROFILES_YAML}}
+workspaces: {{WORKSPACES_YAML}}
 security:
   level: "{{SECURITY_LEVEL}}"
   rationale: "{{SECURITY_RATIONALE}}"

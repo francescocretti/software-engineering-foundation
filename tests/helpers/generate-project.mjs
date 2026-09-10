@@ -175,6 +175,36 @@ function generateWorkspace({
 }
 
 /**
+ * Lists every profile the generation applies, in application order, and maps
+ * each workspace directory to its profile so the project manifest records the
+ * complete composition rather than only the root profiles.
+ */
+function describeComposition(versions, profiles, workspaces) {
+  const appliedProfiles = []
+  const workspaceMap = {}
+
+  for (const profileName of profiles) {
+    const profile = versions.profiles[profileName]
+    if (profile === undefined) {
+      throw new Error(`unknown profile ${profileName}`)
+    }
+    appliedProfiles.push(profileName)
+
+    if (profile.layout === 'monorepo') {
+      for (const [workspaceName, workspaceProfileName] of Object.entries({
+        ...workspaces,
+        shared: profile.sharedProfile,
+      })) {
+        appliedProfiles.push(workspaceProfileName)
+        workspaceMap[profile.workspaces[workspaceName]] = workspaceProfileName
+      }
+    }
+  }
+
+  return { appliedProfiles, workspaceMap }
+}
+
+/**
  * Materializes one or more profiles exactly as the skill documents it: common
  * assets, shared tooling copied into `.config/`, Git hooks, each stack
  * template in order, and a manifest merged from `versions.json`. Overlay
@@ -195,6 +225,7 @@ export function generateProject({
   const foundationVersion = JSON.parse(
     readFileSync(resolve(repositoryRoot, 'package.json'), 'utf8'),
   ).version
+  const { appliedProfiles, workspaceMap } = describeComposition(versions, profiles, workspaces)
   const values = {
     ACCESSIBILITY_INVARIANTS:
       '- Meet WCAG 2.2 AA for every user-visible page, state and viewport.',
@@ -204,12 +235,13 @@ export function generateProject({
     HTML_LANG: htmlLang,
     NODE_ENGINES: `>=${versions.runtime.nodeMajor}.0.0 <${versions.runtime.nodeMajor + 1}`,
     NODE_MAJOR: String(versions.runtime.nodeMajor),
-    PROFILES: profiles.join(', '),
-    PROFILES_YAML: JSON.stringify(profiles),
+    PROFILES: appliedProfiles.join(', '),
+    PROFILES_YAML: JSON.stringify(appliedProfiles),
     PROJECT_NAME: projectName,
     SECURITY_LEVEL: securityLevel,
     SECURITY_RATIONALE: securityRationale,
     SCOPE: projectName,
+    WORKSPACES_YAML: JSON.stringify(workspaceMap),
     YARN_VERSION: versions.runtime.yarn,
   }
   const rootValues = { ...values, CONFIG_ROOT: './.config' }

@@ -120,7 +120,16 @@ test('the monorepo layout follows STRUCT-SHAPE-001 with root-owned tooling', () 
   )
   assert.match(
     readFileSync(resolve(root, '.engineering-foundation.yml'), 'utf8'),
-    /^profiles: \["monorepo","supabase"\]$/m,
+    /^profiles: \["monorepo","react-vite","fastify","shared","supabase"\]$/m,
+    'the manifest records every applied profile, workspaces included',
+  )
+  assert.match(
+    readFileSync(resolve(root, '.engineering-foundation.yml'), 'utf8'),
+    /^workspaces: \{"apps\/client":"react-vite","apps\/server":"fastify","packages\/shared":"shared"\}$/m,
+  )
+  assert.match(
+    readFileSync(resolve(root, 'AGENTS.md'), 'utf8'),
+    /profiles `monorepo, react-vite, fastify, shared, supabase`/,
   )
 })
 

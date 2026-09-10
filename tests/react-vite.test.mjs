@@ -87,6 +87,7 @@ test('the generated React + Vite project is complete and fully resolved', () => 
 
   const record = readFileSync(resolve(projectDirectory, '.engineering-foundation.yml'), 'utf8')
   assert.match(record, /^profiles: \["react-vite"\]$/m)
+  assert.match(record, /^workspaces: \{\}$/m)
   assert.match(record, /^accessibility: "WCAG 2\.2 AA"$/m)
   assert.match(readFileSync(resolve(projectDirectory, 'index.html'), 'utf8'), /<html lang="en">/)
 })
