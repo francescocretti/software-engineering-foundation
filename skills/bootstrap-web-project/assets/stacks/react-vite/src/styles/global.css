@@ -1,0 +1,65 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  max-width: 40rem;
+  margin-inline: auto;
+  padding: 1rem;
+}
+
+header {
+  padding: 0.5rem 1rem;
+  border-block-end: 1px solid;
+}
+
+form {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 20rem;
+}
+
+/* Interactive targets satisfy the WCAG 2.2 minimum target size. */
+button,
+input {
+  font: inherit;
+  min-block-size: 2.5rem;
+  padding: 0.25rem 0.75rem;
+}
+
+/* A visible focus indicator is never removed. */
+:focus-visible {
+  outline: 3px solid;
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  padding: 0.5rem 1rem;
+  background: Canvas;
+  color: LinkText;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -11,7 +11,12 @@ export default defineConfig(
   foundationIgnores,
   {
     name: 'foundation-repository/fixtures',
-    ignores: ['tests/fixtures/**'],
+    ignores: [
+      'tests/fixtures/**',
+      'tests/.generated/**',
+      // Stack templates are verified through the generated project tests.
+      'skills/bootstrap-web-project/assets/stacks/**',
+    ],
   },
   createJavaScriptConfig(),
   createNodeConfig(),

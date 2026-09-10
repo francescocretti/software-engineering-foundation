@@ -10,7 +10,7 @@
   "scripts": {
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix --max-warnings=0",
-    "test": "node --test",
+    "test": "node --test tests/*.test.mjs",
     "validate": "yarn lint && yarn test"
   },
   "devDependencies": {
