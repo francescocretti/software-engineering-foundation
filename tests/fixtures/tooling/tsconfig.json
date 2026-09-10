@@ -1,0 +1,4 @@
+{
+  "extends": "../../../skills/bootstrap-web-project/assets/tooling/typescript/tsconfig.browser.json",
+  "include": ["src"]
+}

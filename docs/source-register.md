@@ -1,0 +1,53 @@
+# Source register
+
+This register records provenance. Inclusion does not mean that a source is
+adopted wholesale.
+
+## Internal repositories
+
+| Source | Primary contribution | Treatment |
+| --- | --- | --- |
+| `bailu-admin` | React organization and project structure | Extract proven patterns; do not modify source |
+| `bailu-api` | Nest and Supabase backend patterns | Extract proven patterns; do not modify source |
+| `BlackBytes/eslint-config` | Strict ESLint rule candidates | README and implementation are source of truth; curate rather than depend on it |
+| `fta-admin` | Full-stack monorepo structure and developer tooling | Extract client/server/shared patterns; do not modify source |
+| `agami-cloud` | Complex tests and CI/CD experience | Extract lessons; never reproduce secret-printing behavior |
+
+## Public and official sources
+
+| Source | Use |
+| --- | --- |
+| [WCAG 2.2](https://www.w3.org/TR/WCAG22/) | Mandatory frontend accessibility target |
+| [WAI-ARIA APG](https://www.w3.org/WAI/ARIA/apg/) | Interaction and keyboard contracts for custom widgets |
+| [WCAG-EM](https://www.w3.org/TR/WCAG-EM/) | Method for scoped conformance evaluation |
+| [W3C accessibility evaluation guidance](https://www.w3.org/WAI/test-evaluate/) | Manual, automated and assistive-technology evaluation layers |
+| [axe-core](https://github.com/dequelabs/axe-core) | Automated checks against rendered interface states |
+| [`eslint-plugin-jsx-a11y`](https://github.com/jsx-eslint/eslint-plugin-jsx-a11y) | Static JSX accessibility checks |
+| [Testing Library](https://testing-library.com/docs/queries/about/) | Tests through semantic roles, names and labels |
+| [Playwright accessibility testing](https://playwright.dev/docs/accessibility-testing) | Browser-level axe integration for critical flows |
+| [OWASP ASVS 5.0.0](https://github.com/OWASP/ASVS/tree/v5.0.0/5.0) | Pinned verifiable application-security requirements and assurance levels |
+| [OWASP Top 10:2025](https://owasp.org/Top10/2025/) | Current web security awareness coverage, not the verification baseline |
+| [OWASP API Security Top 10:2023](https://owasp.org/API-Security/editions/2023/en/0x11-t10/) | API-specific threat coverage |
+| [OWASP Web Security Testing Guide](https://owasp.org/www-project-web-security-testing-guide/) | Adversarial web testing guidance |
+| [NIST SSDF 1.1](https://csrc.nist.gov/pubs/sp/800/218/final) | Secure development lifecycle and supply-chain framework |
+| [NIST SP 800-63B-4](https://pages.nist.gov/800-63-4/sp800-63b.html) | Authentication assurance and phishing-resistant authentication |
+| [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/) | Boundary validation, error handling, logging and secret handling |
+| [TypeScript documentation](https://www.typescriptlang.org/docs/) | Compiler behavior and strictness options |
+| [Node.js documentation](https://nodejs.org/docs/latest/api/) | Runtime and package boundary behavior |
+| [React documentation](https://react.dev/) | React programming model |
+| [Fastify documentation](https://fastify.dev/docs/latest/) | Fastify lifecycle, validation and serialization |
+| [Nest documentation](https://docs.nestjs.com/) | Nest architecture and security mechanisms |
+| [Supabase documentation](https://supabase.com/docs) | RLS, grants, authentication and key handling |
+| [GitLab documentation](https://docs.gitlab.com/ci/) | Optional CI template and variable safety |
+| [Yarn documentation](https://yarnpkg.com/) | Package-manager pinning and immutable installs |
+| [ESLint documentation](https://eslint.org/docs/latest/) | Flat Config and static-analysis behavior |
+| [`@stylistic` documentation](https://eslint.style/) | ESLint-owned source formatting |
+| [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) | Default commit-message convention |
+| [commitlint documentation](https://commitlint.js.org/) | Commit-message validation |
+| [Husky documentation](https://typicode.github.io/husky/) | Versioned native Git hooks |
+| [lint-staged documentation](https://github.com/lint-staged/lint-staged) | Fast checks scoped to staged files |
+
+Exact standard and tool versions are recorded when their requirements are
+implemented, so future updates can be reviewed deliberately. Security profiles
+remain pinned to ASVS 5.0.0 until a reviewed foundation change updates the
+requirement mappings and project migration guidance.

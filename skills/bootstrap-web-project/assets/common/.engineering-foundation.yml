@@ -1,0 +1,9 @@
+foundationVersion: "{{FOUNDATION_VERSION}}"
+profiles: {{PROFILES_YAML}}
+security:
+  level: "{{SECURITY_LEVEL}}"
+  rationale: "{{SECURITY_RATIONALE}}"
+  asvsVersion: "5.0.0"
+accessibility: "{{ACCESSIBILITY_TARGET}}"
+packageManager: "yarn@{{YARN_VERSION}}"
+ci: "{{CI_PROFILE}}"
