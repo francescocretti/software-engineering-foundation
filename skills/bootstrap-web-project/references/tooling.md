@@ -60,12 +60,22 @@ For every JavaScript or TypeScript project:
    `template` directory, its runtime `dependencies` groups and its
    `devDependencies` groups. Overlay profiles such as `supabase` are applied
    after a base profile. Then create the scripts below.
-7. Add `"postinstall": "husky"`, install once and ensure Git records the hook
-   files as executable. Yarn Modern does not run `prepare`, so `postinstall` is
-   the only install hook that wires Husky. Yarn's default `enableScripts: false`
-   disables third-party install scripts only; the project's own `postinstall`
-   still runs and the templates need no third-party build script. If `HUSKY=0`
-   was set during installation, run `corepack yarn husky` once afterwards.
+7. Add `"postinstall": "husky"` and ensure Git records the hook source files as
+   executable.
+8. After generating the files but before installing dependencies, run
+   `node <skill-directory>/scripts/ensure-git-root.mjs <target>`. The script
+   initializes Git only when the target is not already its own repository root.
+   This includes a target nested inside another repository: never let Husky
+   configure the containing repository.
+9. Install once. Yarn Modern does not run `prepare`, so `postinstall` is the
+   install hook that wires Husky. Yarn's default `enableScripts: false` disables
+   third-party install scripts only; the project's own `postinstall` still runs
+   and the templates need no third-party build script. If `HUSKY=0` was set or
+   lifecycle scripts were skipped, run `corepack yarn husky` once afterwards.
+10. Verify activation, not only hook file permissions:
+    `git config --local --get core.hooksPath` must print `.husky/_`, and
+    `.husky/_/h` and an executable `.husky/_/pre-commit` must exist. If any
+    check fails, run `corepack yarn husky` and verify again.
 
 React profiles include `react.mjs` and the Vite refresh configuration; Node
 backends and Node-run configuration or test files include `node.mjs` with

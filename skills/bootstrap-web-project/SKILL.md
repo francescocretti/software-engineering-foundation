@@ -36,8 +36,11 @@ user choices and recording every applied foundation decision.
 7. Apply the matching assets in order: base stack profile first, then overlay
    profiles such as Supabase. For full-stack projects, use the monorepo profile.
 8. Generate `AGENTS.md` and `.engineering-foundation.yml` in the target.
-9. Install dependencies and run all generated verification commands.
-10. Report the created profiles, security level, checks run and any documented
+9. Run `node <skill-directory>/scripts/ensure-git-root.mjs <target>` so the
+   target is its own Git root before any dependency installation. A containing
+   repository does not satisfy this requirement.
+10. Install dependencies and run all generated verification commands.
+11. Report the created profiles, security level, checks run and any documented
    exception.
 
 ## Reference routing
@@ -57,6 +60,8 @@ user choices and recording every applied foundation decision.
 
 ## Completion criteria
 
-Finish only when the generated project installs reproducibly and its lint,
-typecheck, test and build commands pass. If a required check cannot run, report
-the exact blocker instead of weakening or removing the check.
+Finish only when the generated project installs reproducibly, Git reports the
+target itself as the repository root, Husky's local `core.hooksPath` is
+`.husky/_`, and its lint, typecheck, test and build commands pass. If a required
+check cannot run, report the exact blocker instead of weakening or removing the
+check.
