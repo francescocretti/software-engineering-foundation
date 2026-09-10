@@ -176,12 +176,27 @@ test('the dependency matrix stays exact and on verified compatibility majors', (
       'utf8',
     ),
   )
-  const dependencies = {
-    ...versions.commonDevDependencies,
-    ...versions.nodeDevDependencies,
-    ...versions.reactDependencies,
-    ...versions.reactDevDependencies,
-    ...versions.reactViteDevDependencies,
+  const groupNames = Object.keys(versions).filter((key) => key.endsWith('Dependencies'))
+  const dependencies = {}
+
+  for (const groupName of groupNames) {
+    for (const [name, version] of Object.entries(versions[groupName])) {
+      assert.ok(
+        !(name in dependencies) || dependencies[name] === version,
+        `${name} is pinned to different versions across groups`,
+      )
+      dependencies[name] = version
+    }
+  }
+
+  for (const [profileName, profile] of Object.entries(versions.profiles)) {
+    assert.ok(
+      existsSync(resolve(repositoryRoot, 'skills/bootstrap-web-project/assets', profile.template)),
+      `${profileName} points to a missing template`,
+    )
+    for (const groupName of [...profile.dependencies, ...profile.devDependencies]) {
+      assert.ok(groupName in versions, `${profileName} references unknown group ${groupName}`)
+    }
   }
 
   assert.equal(versions.runtime.nodeMajor, 24)
