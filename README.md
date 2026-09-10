@@ -16,13 +16,12 @@ without native Agent Skills support.
 
 ## Status
 
-The repository structure, shared core engineering standard, mandatory
-accessibility standard, risk-based security standard, shared tooling assets and
-the React with Vite profile are established. The React template is verified on
-every test run by generating a project and running its lint, typecheck,
-component tests and production build. Fastify, Nest, Supabase, the full-stack
-monorepo profile and optional GitLab CI are introduced in separate, reviewable
-stages before the first stable release.
+The repository structure, shared standards, mandatory accessibility standard,
+risk-based security standard, shared tooling assets and the React with Vite,
+Fastify, Nest and Supabase profiles are established. Every template is verified
+on each test run by generating a project and running its lint, typecheck,
+tests and build. The full-stack monorepo profile and optional GitLab CI are
+introduced in separate, reviewable stages before the first stable release.
 
 ## Supported scope
 

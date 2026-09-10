@@ -33,7 +33,8 @@ user choices and recording every applied foundation decision.
 5. Read [risk classification](references/security/risk-classification.md) and
    the selected risk-level reference.
 6. Read only the applicable stack references listed below.
-7. Apply the matching assets. For full-stack projects, use the monorepo profile.
+7. Apply the matching assets in order: base stack profile first, then overlay
+   profiles such as Supabase. For full-stack projects, use the monorepo profile.
 8. Generate `AGENTS.md` and `.engineering-foundation.yml` in the target.
 9. Install dependencies and run all generated verification commands.
 10. Report the created profiles, security level, checks run and any documented

@@ -39,7 +39,13 @@ adopted wholesale.
 | [Vitest documentation](https://vitest.dev/guide/) | Component test runner configuration and Vitest 5 migration |
 | [jsdom](https://github.com/jsdom/jsdom) | DOM environment for component tests |
 | [Playwright documentation](https://playwright.dev/docs/intro) | Browser-level critical-flow tests and web server orchestration |
-| [Fastify documentation](https://fastify.dev/docs/latest/) | Fastify lifecycle, validation and serialization |
+| [Fastify documentation](https://fastify.dev/docs/latest/) | Fastify lifecycle, validation, serialization, plugins and encapsulation |
+| [fastify-type-provider-zod](https://github.com/turkerdev/fastify-type-provider-zod) | zod schemas as Fastify validation and serialization contract |
+| [zod documentation](https://zod.dev/) | Runtime schemas for requests and configuration |
+| [class-validator](https://github.com/typestack/class-validator) | Nest DTO validation |
+| [SWC](https://swc.rs/docs/configuration/compilation) | Decorator metadata transform for Nest tests |
+| [pgTAP](https://pgtap.org/documentation.html) | Database and RLS tests |
+| [PostgreSQL documentation](https://www.postgresql.org/docs/current/) | Grants, policies and function security semantics |
 | [Nest documentation](https://docs.nestjs.com/) | Nest architecture and security mechanisms |
 | [Supabase documentation](https://supabase.com/docs) | RLS, grants, authentication and key handling |
 | [GitLab documentation](https://docs.gitlab.com/ci/) | Optional CI template and variable safety |

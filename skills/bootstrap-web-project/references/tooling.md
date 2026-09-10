@@ -19,6 +19,9 @@ verified against the npm registry on 2026-09-10.
   supports it.
 - jsdom stays on 29 because jsdom 30 requires Node 24.15 while the foundation
   pins only the Node major. Raise both together.
+- Nest stays on 11 because Nest 12 schematics require TypeScript 6 and
+  `@nestjs/throttler` targets Nest 11; zod stays on 4.5 because 4.6 was held
+  by the package-age gate at verification.
 - Upgrade the matrix as a focused dependency change. Verify peer ranges, run
   the representative config tests and run `yarn validate`; do not advance one
   major in isolation.
@@ -48,21 +51,19 @@ For every JavaScript or TypeScript project:
    `assets/tooling/git/lint-staged.config.mjs` when Conventional Commits is
    selected, then copy both hooks. If the documented exception to
    `GIT-MESSAGE-001` is used, omit commitlint and the `commit-msg` hook only.
-6. Merge `commonDevDependencies` and the selected profile groups from
-   `assets/tooling/versions.json` into `devDependencies`, then create the
-   scripts below. Groups ending in `DevDependencies` are development
-   dependencies; `reactDependencies` holds the runtime packages of the React
-   profiles.
+6. Merge the dependency groups listed for the selected profiles under
+   `profiles` in `assets/tooling/versions.json`: each profile names its
+   `template` directory, its runtime `dependencies` groups and its
+   `devDependencies` groups. Overlay profiles such as `supabase` are applied
+   after a base profile. Then create the scripts below.
 7. Add `"prepare": "husky"`, install once and ensure Git records the hook files
    as executable.
 
-React profiles include `react.mjs` and the `reactDevDependencies` group; the
-React with Vite profile also includes the refresh configuration, the
-`reactViteDevDependencies` group and the `nodeDevDependencies` group for its
-Node-run configuration files. Its template and composition are described in
-[the React reference](stacks/react.md). Node backends and Node-run
-configuration or test files include `node.mjs` with deliberately scoped file
-globs.
+React profiles include `react.mjs` and the Vite refresh configuration; Node
+backends and Node-run configuration or test files include `node.mjs` with
+deliberately scoped file globs. Each stack reference describes its template and
+composition: [React](stacks/react.md), [Fastify](stacks/fastify.md),
+[Nest](stacks/nest.md) and [Supabase](stacks/supabase.md).
 
 ## Script contract
 
