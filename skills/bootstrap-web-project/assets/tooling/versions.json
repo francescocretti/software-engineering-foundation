@@ -57,6 +57,9 @@
         "commonDevDependencies",
         "nodeDevDependencies",
         "nestDevDependencies"
+      ],
+      "resolutions": [
+        "nestResolutions"
       ]
     },
     "supabase": {
@@ -162,6 +165,9 @@
     "unplugin-swc": "1.6.0",
     "vite": "8.2.2",
     "vitest": "5.0.0"
+  },
+  "nestResolutions": {
+    "multer": "2.3.0"
   },
   "nodeDevDependencies": {
     "@types/node": "24.13.3"

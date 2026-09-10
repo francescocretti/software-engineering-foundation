@@ -59,6 +59,7 @@ test('the generated Nest project is complete and fully resolved', () => {
   const manifest = JSON.parse(readFileSync(resolve(projectDirectory, 'package.json'), 'utf8'))
   assert.equal(manifest.type, undefined, 'Nest 11 projects stay CommonJS')
   assert.deepEqual(manifest.dependencies, generated.versions.nestDependencies)
+  assert.deepEqual(manifest.resolutions, generated.versions.nestResolutions)
   for (const script of ['dev', 'start', 'lint', 'lint:fix', 'typecheck', 'test', 'build', 'validate']) {
     assert.ok(script in manifest.scripts, `missing script contract: ${script}`)
   }
@@ -99,6 +100,36 @@ test('the generated Nest project builds with the Nest CLI and boots', () => {
     '})()',
   ].join('\n')])
   assert.match(output, /^200 \{"status":"ok"\}/)
+})
+
+test('the Multer security resolution remains compatible with Nest file interceptors', () => {
+  const output = run(process.execPath, ['-e', [
+    'require("reflect-metadata")',
+    'const { Controller, Module, Post, UploadedFile, UseInterceptors } = require("@nestjs/common")',
+    'const { NestFactory } = require("@nestjs/core")',
+    'const { FileInterceptor } = require("@nestjs/platform-express")',
+    'const request = require("supertest")',
+    'const multerVersion = require("multer/package.json").version',
+    'class UploadController { upload(file) { return { name: file.originalname, size: file.size } } }',
+    'const descriptor = Object.getOwnPropertyDescriptor(UploadController.prototype, "upload")',
+    'Post("test-upload")(UploadController.prototype, "upload", descriptor)',
+    'UseInterceptors(FileInterceptor("file"))(UploadController.prototype, "upload", descriptor)',
+    'UploadedFile()(UploadController.prototype, "upload", 0)',
+    'Controller()(UploadController)',
+    'class UploadModule {}',
+    'Module({ controllers: [UploadController] })(UploadModule)',
+    'void (async () => {',
+    '  const app = await NestFactory.create(UploadModule, { logger: false })',
+    '  await app.init()',
+    '  const response = await request(app.getHttpServer())',
+    '    .post("/test-upload")',
+    '    .attach("file", Buffer.from("safe"), "proof.txt")',
+    '  console.log(multerVersion, response.status, JSON.stringify(response.body))',
+    '  await app.close()',
+    '})()',
+  ].join('\n')])
+
+  assert.match(output, /^2\.3\.0 201 \{"name":"proof\.txt","size":4\}/)
 })
 
 test('the generated Nest configuration fails fast without leaking values', () => {

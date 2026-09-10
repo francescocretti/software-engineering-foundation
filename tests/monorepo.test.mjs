@@ -88,6 +88,7 @@ test('the monorepo layout follows STRUCT-SHAPE-001 with root-owned tooling', () 
   assert.ok('db:test' in rootManifest.scripts, 'the Supabase overlay lands on the root')
   assert.ok('eslint' in rootManifest.devDependencies)
   assert.ok('eslint-plugin-jsx-a11y' in rootManifest.devDependencies)
+  assert.equal('resolutions' in rootManifest, false, 'Fastify does not need Nest overrides')
 
   const client = readJson(resolve(root, 'apps/client/package.json'))
   const server = readJson(resolve(root, 'apps/server/package.json'))
@@ -169,6 +170,9 @@ test('the fastify monorepo builds both applications and the server consumes the 
 
 test('the nest monorepo builds the server with the Nest CLI', () => {
   const root = variants.nest
+  const rootManifest = readJson(resolve(root, 'package.json'))
+
+  assert.deepEqual(rootManifest.resolutions, { multer: '2.3.0' })
 
   run(resolve(root, 'apps/server'), binary('nest'), ['build'])
   assert.ok(existsSync(resolve(root, 'apps/server/dist/main.js')))

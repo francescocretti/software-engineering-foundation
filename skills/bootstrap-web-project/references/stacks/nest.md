@@ -32,8 +32,9 @@ The production template lives in `assets/stacks/nest/`:
    `{{PROJECT_NAME}}`, `{{YARN_VERSION}}` and `{{NODE_ENGINES}}` as described
    in the [React reference](react.md). The project stays CommonJS; do not add
    `"type": "module"`.
-3. Fill `dependencies` and `devDependencies` from the `nest` profile in
-   `versions.json`. Keep every version exact.
+3. Fill `dependencies`, `devDependencies` and root-level `resolutions` from
+   the `nest` profile in `versions.json`. Keep every version exact. In a
+   monorepo, resolutions belong to the root manifest, not the workspace.
 4. Replace the demonstration `greetings` module with the first real capability;
    keep `health`.
 5. Install with Corepack and run `corepack yarn validate`, then
@@ -44,6 +45,11 @@ The production template lives in `assets/stacks/nest/`:
 - Nest stays on major 11. Nest 12 ships as ESM and its schematics require
   TypeScript 6, while `@nestjs/throttler` and the shared TypeScript 5.9 pin
   target Nest 11. Upgrade the whole set together.
+- `@nestjs/platform-express@11.2.3` still requests the vulnerable
+  `multer@2.2.0`. The root resolution pins Multer 2.3.0, which contains the
+  security fixes. Keep the resolution until Nest declares a safe version;
+  remove it only after the Nest build, boot and HTTP tests pass without it and
+  the dependency audit remains clean for Multer.
 - `vitest.config.mts` uses `unplugin-swc` because Vite's default transform does
   not emit decorator metadata. `test/setup.ts` sets test-only environment
   values before `AppModule` is imported, since `ConfigModule.forRoot` reads the

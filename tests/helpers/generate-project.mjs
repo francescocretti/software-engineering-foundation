@@ -248,6 +248,7 @@ export function generateProject({
 
   let dependencies = {}
   let devDependencies = {}
+  let resolutions = {}
 
   for (const profileName of profiles) {
     const profile = versions.profiles[profileName]
@@ -257,10 +258,16 @@ export function generateProject({
     copyTemplateTree(resolve(assetsRoot, profile.template), targetDirectory, rootValues)
     dependencies = { ...dependencies, ...collectGroups(versions, profile.dependencies) }
     devDependencies = { ...devDependencies, ...collectGroups(versions, profile.devDependencies) }
+    resolutions = { ...resolutions, ...collectGroups(versions, profile.resolutions ?? []) }
 
     if (profile.layout === 'monorepo') {
       const selected = { ...workspaces, shared: profile.sharedProfile }
       for (const [workspaceName, workspaceProfileName] of Object.entries(selected)) {
+        const workspaceProfile = versions.profiles[workspaceProfileName]
+        resolutions = {
+          ...resolutions,
+          ...collectGroups(versions, workspaceProfile.resolutions ?? []),
+        }
         generateWorkspace({
           hoistedGroups: profile.devDependencies,
           rootDirectory: targetDirectory,
@@ -284,6 +291,9 @@ export function generateProject({
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
   manifest.dependencies = sortedEntries(dependencies)
   manifest.devDependencies = sortedEntries(devDependencies)
+  if (Object.keys(resolutions).length > 0) {
+    manifest.resolutions = sortedEntries(resolutions)
+  }
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
 
   return { targetDirectory, values, versions }

@@ -197,6 +197,9 @@ test('the dependency matrix stays exact and on verified compatibility majors', (
     for (const groupName of [...profile.dependencies, ...profile.devDependencies]) {
       assert.ok(groupName in versions, `${profileName} references unknown group ${groupName}`)
     }
+    for (const groupName of profile.resolutions ?? []) {
+      assert.ok(groupName in versions, `${profileName} references unknown resolution group ${groupName}`)
+    }
     for (const moduleName of profile.eslintModules) {
       assert.ok(
         existsSync(
@@ -226,6 +229,7 @@ test('the dependency matrix stays exact and on verified compatibility majors', (
     readFileSync(resolve(repositoryRoot, 'package.json'), 'utf8'),
   )
   assert.deepEqual(repositoryPackage.devDependencies, dependencies)
+  assert.deepEqual(repositoryPackage.resolutions, versions.nestResolutions)
 })
 
 test('the representative ESLint composition enables typed and accessibility rules', async () => {
