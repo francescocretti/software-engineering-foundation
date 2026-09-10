@@ -17,11 +17,11 @@ without native Agent Skills support.
 ## Status
 
 The repository structure, shared standards, mandatory accessibility standard,
-risk-based security standard, shared tooling assets and the React with Vite,
-Fastify, Nest, Supabase and full-stack monorepo profiles are established. Every
-template is verified on each test run by generating a project and running its
-lint, typecheck, tests and build. Optional GitLab CI is introduced as the last
-stage before the first stable release.
+risk-based security standard, shared tooling assets, the React with Vite,
+Fastify, Nest, Supabase and full-stack monorepo profiles and the optional
+GitLab CI baseline are established. Every template is verified on each test run
+by generating a project and running its lint, typecheck, tests and build. The
+first stable release follows the end-to-end validation of generated projects.
 
 ## Supported scope
 
