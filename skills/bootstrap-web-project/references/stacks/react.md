@@ -24,6 +24,9 @@ The production template lives in `assets/stacks/react-vite/`:
 
 ## Files to apply
 
+The skill script performs the file steps below; they are the specification it
+implements.
+
 1. Complete the [shared tooling steps](../tooling.md). Copy the
    ESLint modules into `.config/eslint/` and the TypeScript presets into
    `.config/typescript/`; the template's `eslint.config.mjs` and tsconfig files

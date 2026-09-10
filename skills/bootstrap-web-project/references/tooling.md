@@ -40,6 +40,12 @@ package it patches; do not accumulate unexplained package extensions.
 
 ## Files to apply
 
+`scripts/generate-project.mjs` performs the steps in this section and in the
+stack references deterministically; run it as described in the skill workflow.
+The steps stay written out because they are the specification the script
+implements and the fallback when it cannot run. The script never deletes or
+overwrites existing files.
+
 For every JavaScript or TypeScript project:
 
 1. Copy `.node-version` and `.yarnrc.yml` from `assets/common/` to preserve the

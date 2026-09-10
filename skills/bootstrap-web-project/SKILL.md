@@ -33,14 +33,26 @@ user choices and recording every applied foundation decision.
 5. Read [risk classification](references/security/risk-classification.md) and
    the selected risk-level reference.
 6. Read only the applicable stack references listed below.
-7. Apply the matching assets in order: base stack profile first, then overlay
-   profiles such as Supabase. For full-stack projects, use the monorepo profile.
-8. Generate `AGENTS.md` and `.engineering-foundation.yml` in the target.
-9. Run `node <skill-directory>/scripts/ensure-git-root.mjs <target>` so the
+7. Generate the project with the skill script, which applies the profiles in
+   order, writes `AGENTS.md` and `.engineering-foundation.yml` and refuses a
+   target that is not empty:
+
+   ```sh
+   node <skill-directory>/scripts/generate-project.mjs \
+     --target <dir> --name <package-name> \
+     --profile <base-profile> [--profile supabase] \
+     [--client react-vite --server fastify|nest] [--ci gitlab] \
+     --security-level R1|R2|R3 --security-rationale "<why>" [--html-lang <tag>]
+   ```
+
+   Full-stack projects use `--profile monorepo` with `--client` and
+   `--server`. Only if the script cannot run, apply the file steps in each
+   reference by hand; they are the specification the script implements.
+8. Run `node <skill-directory>/scripts/ensure-git-root.mjs <target>` so the
    target is its own Git root before any dependency installation. A containing
    repository does not satisfy this requirement.
-10. Install dependencies and run all generated verification commands.
-11. Report the created profiles, security level, checks run and any documented
+9. Install dependencies and run all generated verification commands.
+10. Report the created profiles, security level, checks run and any documented
    exception.
 
 ## Reference routing

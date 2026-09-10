@@ -16,6 +16,9 @@ The overlay lives in `assets/stacks/supabase/`:
 
 ## Files to apply
 
+The skill script performs the file steps below; they are the specification it
+implements.
+
 1. Apply the base profile first.
 2. Copy `assets/stacks/supabase/`: append `.env.example` and copy the reference
    migration under `supabase/migrations/`.

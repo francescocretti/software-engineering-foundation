@@ -12,6 +12,9 @@ of generic tutorials.
 - Keep `skills/bootstrap-web-project/SKILL.md` short and focused on routing.
 - Put conditional detail in the relevant reference file.
 - Put files intended for generated projects under `assets/`, not in references.
+- Put deterministic bootstrap steps in `skills/bootstrap-web-project/scripts/`
+  and keep the references as their specification. Scripts never delete or
+  overwrite user files.
 - Do not duplicate a requirement across multiple documents; link to its
   canonical location.
 - Use Yarn through Corepack. Do not introduce npm, pnpm or Bun workflows.

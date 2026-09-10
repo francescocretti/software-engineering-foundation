@@ -61,7 +61,7 @@ Next.js is intentionally outside the initial scope.
 
 ```text
 docs/                         Governance, provenance and decisions
-skills/bootstrap-web-project Agent workflow, references and generated assets
+skills/bootstrap-web-project Agent workflow, references, generated assets and scripts
 tests/                        Structural and behavioral validation
 ```
 

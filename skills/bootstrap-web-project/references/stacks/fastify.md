@@ -25,6 +25,9 @@ The production template lives in `assets/stacks/fastify/`:
 
 ## Files to apply
 
+The skill script performs the file steps below; they are the specification it
+implements.
+
 1. Complete the [shared tooling steps](../tooling.md) with `.config/eslint/`
    and `.config/typescript/`.
 2. Copy every file of `assets/stacks/fastify/` to the project root and replace

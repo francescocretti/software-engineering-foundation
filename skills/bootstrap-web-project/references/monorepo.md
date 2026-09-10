@@ -16,6 +16,9 @@ decisions are recorded in ADR 0008 of the foundation repository.
 
 ## Files to apply
 
+`generate-project.mjs --profile monorepo --client <profile> --server <profile>`
+performs steps 1 to 3; overlays are added as further `--profile` options.
+
 1. Apply the common assets, `.config/`, Git hooks and the `monorepo` template
    at the repository root. The root receives `commonDevDependencies`,
    `nodeDevDependencies` and `reactDevDependencies`, so lint tooling exists
