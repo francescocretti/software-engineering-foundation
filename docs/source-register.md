@@ -24,6 +24,9 @@ normative basis remains the public sources listed here.
 | [NIST SSDF 1.1](https://csrc.nist.gov/pubs/sp/800/218/final) | Secure development lifecycle and supply-chain framework |
 | [NIST SP 800-63B-4](https://pages.nist.gov/800-63-4/sp800-63b.html) | Authentication assurance and phishing-resistant authentication |
 | [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/) | Boundary validation, error handling, logging and secret handling |
+| [ESLint rules reference](https://eslint.org/docs/latest/rules/) | `no-magic-numbers`, `func-style` and `prefer-arrow-callback` as the checks behind the code-form invariants |
+| [typescript-eslint rules](https://typescript-eslint.io/rules/) | Typed `no-magic-numbers` and `naming-convention` for constants modules |
+| [MDN arrow function expressions](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions) | Lexical `this` semantics behind the default callable form |
 | [TypeScript documentation](https://www.typescriptlang.org/docs/) | Compiler behavior and strictness options |
 | [Node.js documentation](https://nodejs.org/docs/latest/api/) | Runtime and package boundary behavior |
 | [React documentation](https://react.dev/) | React programming model |

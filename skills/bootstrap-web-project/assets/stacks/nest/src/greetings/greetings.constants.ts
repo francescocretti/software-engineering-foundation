@@ -1,0 +1,1 @@
+export const MAX_GREETING_NAME_LENGTH = 100

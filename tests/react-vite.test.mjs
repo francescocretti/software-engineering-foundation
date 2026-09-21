@@ -14,7 +14,7 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const projectDirectory = generatedDirectory('react-vite')
 const binary = (name) => resolve(repositoryRoot, 'node_modules/.bin', name)
 
-function run(command, args) {
+const run = (command, args) => {
   return execFileSync(command, args, {
     cwd: projectDirectory,
     encoding: 'utf8',

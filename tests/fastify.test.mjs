@@ -12,7 +12,7 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const projectDirectory = generatedDirectory('fastify')
 const binary = (name) => resolve(repositoryRoot, 'node_modules/.bin', name)
 
-function run(command, args, options = {}) {
+const run = (command, args, options = {}) => {
   return execFileSync(command, args, {
     cwd: projectDirectory,
     encoding: 'utf8',
@@ -42,7 +42,10 @@ test('the generated Fastify project is complete and fully resolved', () => {
     '.husky/pre-commit',
     'eslint.config.mjs',
     'src/app.ts',
+    'src/config.constants.ts',
     'src/config.ts',
+    'src/features/greetings/greetings.constants.ts',
+    'src/http.constants.ts',
     'src/plugins/error-handler.ts',
     'src/plugins/security.ts',
     'src/server.ts',

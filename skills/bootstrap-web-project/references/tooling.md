@@ -121,6 +121,32 @@ Formatting rules apply only to JavaScript, TypeScript and JSX/TSX. Do not add
 Prettier for JSON, Markdown or YAML; preserve those formats deliberately or add
 a format-specific non-overlapping validator through a documented exception.
 
+## Code form baseline
+
+The preset enforces the two code-form invariants of the shared standard.
+
+For [`CORE-ARROW-001`](standards/core.md), `func-style`,
+`prefer-arrow-callback` and a `no-restricted-syntax` selector reject,
+respectively, a function declaration, a `function` callback and a function
+expression bound to a variable. The selector excludes generators, which have no
+arrow form. `no-restricted-syntax` is an array rule: a project that adds its own
+entry replaces the shared one rather than extending it, so it must repeat the
+selector exported as `arrowFunctionRules` from `base.mjs`.
+
+For [`CORE-CONSTANT-001`](standards/core.md), `no-magic-numbers` and its
+typed counterpart reject inline literals other than `-1`, `0`, `1` and array
+indices, in object values as well as in expressions, and require the value to
+be bound to a `const`. Enum members, numeric literal types and readonly class
+properties are already named declarations and stay exempt.
+`@typescript-eslint/naming-convention` requires `UPPER_SNAKE_CASE` for every
+export of a `*.constants.ts` module.
+
+Literal checking is off in the files that are themselves declarations of their
+values: `*.test.*` and `*.spec.*`, `test/` and `e2e/` directories, `*.config.*`
+and everything under `.config/`. The arrow requirement stays on in all of them.
+Extend the exempt globs through the `literalExemptFiles` option, spreading the
+exported `defaultLiteralExemptFiles` so the shared entries survive.
+
 ## Deliberate boundaries
 
 The preset enforces typed linting, promise safety, documented TypeScript

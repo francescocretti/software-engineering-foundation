@@ -12,7 +12,7 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const projectDirectory = generatedDirectory('nest')
 const binary = (name) => resolve(repositoryRoot, 'node_modules/.bin', name)
 
-function run(command, args) {
+const run = (command, args) => {
   return execFileSync(command, args, {
     cwd: projectDirectory,
     encoding: 'utf8',
@@ -43,7 +43,9 @@ test('the generated Nest project is complete and fully resolved', () => {
     'src/app.module.ts',
     'src/app.setup.ts',
     'src/common/stable-error.filter.ts',
+    'src/config/env.constants.ts',
     'src/config/env.ts',
+    'src/greetings/greetings.constants.ts',
     'src/main.ts',
     'test/app.e2e.test.ts',
     'tsconfig.build.json',

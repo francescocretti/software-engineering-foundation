@@ -21,6 +21,11 @@ corepack yarn validate
 - Use TypeScript strict mode.
 - Use ESLint for linting and JavaScript or TypeScript formatting.
 - Do not add Prettier or another package manager.
+- Define functions as arrow functions; `function` is only for generators,
+  for code needing its own `this`, `arguments` or `new.target`, and for
+  required hoisting.
+- Declare meaningful numeric literals as `UPPER_SNAKE_CASE` exports of a
+  `<feature>.constants.ts` module colocated with the feature.
 - Never commit, print or log secrets and authentication material.
 - Validate external input at the appropriate trust boundary.
 - Preserve or improve tests for changed behavior.

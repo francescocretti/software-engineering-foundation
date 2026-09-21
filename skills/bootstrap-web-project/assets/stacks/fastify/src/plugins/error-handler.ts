@@ -5,6 +5,12 @@ import {
   isResponseSerializationError,
 } from 'fastify-type-provider-zod'
 
+import {
+  HTTP_BAD_REQUEST,
+  HTTP_INTERNAL_SERVER_ERROR,
+  HTTP_NOT_FOUND,
+} from '../http.constants.ts'
+
 export type ErrorResponse = {
   error: {
     code: string
@@ -29,14 +35,14 @@ const internalError: ErrorResponse = {
 export const errorHandlerPlugin = fp(
   (app, _options, done) => {
     app.setNotFoundHandler((_request, reply) => {
-      return reply.code(404).send({
+      return reply.code(HTTP_NOT_FOUND).send({
         error: { code: 'NOT_FOUND', message: 'Route not found' },
       } satisfies ErrorResponse)
     })
 
     app.setErrorHandler((error: HandledError, request, reply) => {
       if (hasZodFastifySchemaValidationErrors(error)) {
-        return reply.code(400).send({
+        return reply.code(HTTP_BAD_REQUEST).send({
           error: {
             code: 'VALIDATION_FAILED',
             message: `Invalid request ${error.validationContext ?? 'input'}`,
@@ -50,17 +56,23 @@ export const errorHandlerPlugin = fp(
 
       if (isResponseSerializationError(error)) {
         request.log.error({ err: error }, 'response does not match its schema')
-        return reply.code(500).send(internalError)
+        return reply.code(HTTP_INTERNAL_SERVER_ERROR).send(internalError)
       }
 
-      if (error.statusCode !== undefined && error.statusCode >= 400 && error.statusCode < 500) {
-        return reply.code(error.statusCode).send({
+      const { statusCode } = error
+
+      if (
+        statusCode !== undefined
+        && statusCode >= HTTP_BAD_REQUEST
+        && statusCode < HTTP_INTERNAL_SERVER_ERROR
+      ) {
+        return reply.code(statusCode).send({
           error: { code: error.code ?? 'REQUEST_ERROR', message: error.message },
         } satisfies ErrorResponse)
       }
 
       request.log.error({ err: error }, 'unhandled error')
-      return reply.code(500).send(internalError)
+      return reply.code(HTTP_INTERNAL_SERVER_ERROR).send(internalError)
     })
 
     done()

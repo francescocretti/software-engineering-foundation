@@ -3,10 +3,8 @@ type StatusProps = {
   onActivate: () => void
 }
 
-export function StatusButton({ label, onActivate }: StatusProps): React.JSX.Element {
-  return (
-    <button type="button" onClick={onActivate}>
-      {label}
-    </button>
-  )
-}
+export const StatusButton = ({ label, onActivate }: StatusProps): React.JSX.Element => (
+  <button type="button" onClick={onActivate}>
+    {label}
+  </button>
+)

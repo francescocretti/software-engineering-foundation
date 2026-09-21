@@ -20,15 +20,13 @@ const internalError: ErrorResponse = {
   error: { code: 'INTERNAL_ERROR', message: 'Internal server error' },
 }
 
-function isValidationPayload(payload: unknown): payload is { message: string[] } {
-  return (
-    typeof payload === 'object'
-    && payload !== null
-    && Array.isArray((payload as { message?: unknown }).message)
-  )
-}
+const isValidationPayload = (payload: unknown): payload is { message: string[] } => (
+  typeof payload === 'object'
+  && payload !== null
+  && Array.isArray((payload as { message?: unknown }).message)
+)
 
-function codeFor(status: HttpStatus, payload: unknown): string {
+const codeFor = (status: HttpStatus, payload: unknown): string => {
   if (status === HttpStatus.BAD_REQUEST && isValidationPayload(payload)) {
     return 'VALIDATION_FAILED'
   }

@@ -1,0 +1,5 @@
+export const MAX_TCP_PORT = 65535
+export const DEFAULT_PORT = 3000
+export const DEFAULT_RATE_LIMIT_MAX = 100
+export const MIN_BODY_LIMIT_BYTES = 1024
+export const DEFAULT_BODY_LIMIT_BYTES = 1_048_576

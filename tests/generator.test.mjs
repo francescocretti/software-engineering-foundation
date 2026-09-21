@@ -10,14 +10,14 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const skillRoot = resolve(repositoryRoot, 'skills/bootstrap-web-project')
 const generator = resolve(skillRoot, 'scripts/generate-project.mjs')
 
-function runGenerator(argumentList) {
+const runGenerator = (argumentList) => {
   return spawnSync(process.execPath, [generator, ...argumentList], {
     cwd: tmpdir(),
     encoding: 'utf8',
   })
 }
 
-function temporaryDirectory(context) {
+const temporaryDirectory = (context) => {
   const directory = mkdtempSync(resolve(tmpdir(), 'foundation-generator-'))
   context.after(() => rmSync(directory, { force: true, recursive: true }))
   return directory

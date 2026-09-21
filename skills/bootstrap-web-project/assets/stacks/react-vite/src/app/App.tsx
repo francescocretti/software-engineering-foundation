@@ -1,10 +1,10 @@
 import { useId, useState, type ReactElement, type SubmitEvent } from 'react'
 
-export function App(): ReactElement {
+export const App = (): ReactElement => {
   const nameId = useId()
   const [greeting, setGreeting] = useState('')
 
-  function handleSubmit(event: SubmitEvent<HTMLFormElement>): void {
+  const handleSubmit = (event: SubmitEvent<HTMLFormElement>): void => {
     event.preventDefault()
     const name = new FormData(event.currentTarget).get('name')
     setGreeting(typeof name === 'string' && name.trim() !== '' ? `Hello, ${name.trim()}.` : '')

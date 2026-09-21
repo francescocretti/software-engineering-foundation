@@ -25,7 +25,10 @@ const redactedLogFields = [
   'res.headers["set-cookie"]',
 ]
 
-export async function buildApp({ config, logger = true }: BuildAppOptions): Promise<App> {
+export const buildApp = async ({
+  config,
+  logger = true,
+}: BuildAppOptions): Promise<App> => {
   const app = Fastify({
     bodyLimit: config.BODY_LIMIT,
     logger: logger === true
