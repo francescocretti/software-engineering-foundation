@@ -15,7 +15,7 @@ const variants = {
   nest: generatedDirectory('monorepo-nest'),
 }
 
-function run(cwd, command, args) {
+const run = (cwd, command, args) => {
   return execFileSync(command, args, {
     cwd,
     encoding: 'utf8',
@@ -24,7 +24,7 @@ function run(cwd, command, args) {
   })
 }
 
-function readJson(path) {
+const readJson = (path) => {
   return JSON.parse(readFileSync(path, 'utf8'))
 }
 
@@ -33,7 +33,7 @@ function readJson(path) {
  * fixture links the shared package by hand so resolution walks up to the
  * repository's installed dependencies without a network install.
  */
-function linkSharedWorkspace(root, scope) {
+const linkSharedWorkspace = (root, scope) => {
   const scopeDirectory = resolve(root, 'node_modules', `@${scope}`)
   mkdirSync(scopeDirectory, { recursive: true })
   symlinkSync('../../packages/shared', resolve(scopeDirectory, 'shared'), 'dir')
@@ -43,9 +43,8 @@ const probePath = 'apps/server/src/shared-contract.ts'
 const probeSource = [
   'import { greetingRequestSchema, type GreetingRequest } from \'@SCOPE/shared\'',
   '',
-  'export function parseGreetingRequest(input: unknown): GreetingRequest {',
-  '  return greetingRequestSchema.parse(input)',
-  '}',
+  'export const parseGreetingRequest = (input: unknown): GreetingRequest =>',
+  '  greetingRequestSchema.parse(input)',
   '',
 ].join('\n')
 

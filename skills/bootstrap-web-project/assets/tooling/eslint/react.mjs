@@ -7,49 +7,45 @@ import globals from 'globals'
 
 const defaultReactFiles = ['**/*.{jsx,tsx}']
 
-export function createReactConfig({
+export const createReactConfig = ({
   attributes = {},
   components = {},
   files = defaultReactFiles,
-} = {}) {
-  return defineConfig({
-    name: 'foundation/react',
-    files,
-    extends: [
-      react.configs.flat.recommended,
-      react.configs.flat['jsx-runtime'],
-      reactHooks.configs.flat['recommended-latest'],
-      jsxA11y.flatConfigs.strict,
-    ],
-    languageOptions: {
-      globals: {
-        ...globals.browser,
-        ...globals.serviceworker,
-      },
-      parserOptions: {
-        ecmaFeatures: { jsx: true },
-      },
+} = {}) => defineConfig({
+  name: 'foundation/react',
+  files,
+  extends: [
+    react.configs.flat.recommended,
+    react.configs.flat['jsx-runtime'],
+    reactHooks.configs.flat['recommended-latest'],
+    jsxA11y.flatConfigs.strict,
+  ],
+  languageOptions: {
+    globals: {
+      ...globals.browser,
+      ...globals.serviceworker,
     },
-    settings: {
-      'react': { version: 'detect' },
-      'jsx-a11y': { attributes, components },
+    parserOptions: {
+      ecmaFeatures: { jsx: true },
     },
-    rules: {
-      'react/button-has-type': 'error',
-      'react/iframe-missing-sandbox': 'error',
-      'react/jsx-no-script-url': 'error',
-      'react/no-danger': 'error',
-      'react/prop-types': 'off',
-    },
-  })
-}
+  },
+  settings: {
+    'react': { version: 'detect' },
+    'jsx-a11y': { attributes, components },
+  },
+  rules: {
+    'react/button-has-type': 'error',
+    'react/iframe-missing-sandbox': 'error',
+    'react/jsx-no-script-url': 'error',
+    'react/no-danger': 'error',
+    'react/prop-types': 'off',
+  },
+})
 
-export function createViteReactRefreshConfig({
+export const createViteReactRefreshConfig = ({
   files = defaultReactFiles,
-} = {}) {
-  return defineConfig({
-    ...reactRefreshPlugin.configs.vite,
-    name: 'foundation/react-refresh',
-    files,
-  })
-}
+} = {}) => defineConfig({
+  ...reactRefreshPlugin.configs.vite,
+  name: 'foundation/react-refresh',
+  files,
+})

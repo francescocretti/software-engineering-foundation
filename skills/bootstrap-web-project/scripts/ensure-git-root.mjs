@@ -19,7 +19,7 @@ if (!existsSync(target) || !statSync(target).isDirectory()) {
 
 const targetRoot = realpathSync(target)
 
-function runGit(arguments_, { allowFailure = false } = {}) {
+const runGit = (arguments_, { allowFailure = false } = {}) => {
   const result = spawnSync('git', arguments_, {
     cwd: targetRoot,
     encoding: 'utf8',
@@ -35,7 +35,7 @@ function runGit(arguments_, { allowFailure = false } = {}) {
   return result
 }
 
-function currentGitRoot() {
+const currentGitRoot = () => {
   const result = runGit(['rev-parse', '--show-toplevel'], { allowFailure: true })
 
   if (result.status !== 0) {

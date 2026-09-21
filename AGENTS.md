@@ -19,6 +19,8 @@ of generic tutorials.
   canonical location.
 - Use Yarn through Corepack. Do not introduce npm, pnpm or Bun workflows.
 - Use ESLint for JavaScript and TypeScript formatting. Do not add Prettier.
+- Write arrow functions and colocated `*.constants` modules in this
+  repository too: the foundation passes the gate it ships.
 - Treat WCAG 2.2 AA as mandatory for every React profile.
 - Never print, commit, log or place secrets in fixtures.
 

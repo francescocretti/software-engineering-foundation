@@ -15,13 +15,19 @@ import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 
+import {
+  CLI_ARGUMENTS_OFFSET,
+  MANIFEST_INDENT_SPACES,
+  MAX_REPORTED_BLOCKING_ENTRIES,
+} from './generate-project.constants.mjs'
+
 const assetsRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../assets')
 const placeholderPattern = /\{\{([A-Z0-9_]+)\}\}/g
 const appendableFiles = new Set(['.gitignore', '.env.example'])
 const rootOnlyScripts = new Set(['lint', 'lint:fix', 'validate', 'postinstall'])
 const tolerableTargetEntries = new Set(['.git'])
 
-export function readVersions() {
+export const readVersions = () => {
   return JSON.parse(readFileSync(resolve(assetsRoot, 'tooling/versions.json'), 'utf8'))
 }
 
@@ -29,7 +35,7 @@ export function readVersions() {
  * The generator never deletes anything. The target must not exist yet or must
  * be an empty directory; a freshly initialized Git repository is accepted.
  */
-function ensureWritableTarget(targetDirectory) {
+const ensureWritableTarget = (targetDirectory) => {
   if (!existsSync(targetDirectory)) {
     return
   }
@@ -43,7 +49,7 @@ function ensureWritableTarget(targetDirectory) {
   if (blocking.length > 0) {
     throw new Error(
       `target directory is not empty: ${targetDirectory} `
-      + `(found ${blocking.slice(0, 5).join(', ')}). Refusing to overwrite existing files.`,
+      + `(found ${blocking.slice(0, MAX_REPORTED_BLOCKING_ENTRIES).join(', ')}). Refusing to overwrite existing files.`,
     )
   }
 }
@@ -53,7 +59,7 @@ function ensureWritableTarget(targetDirectory) {
  * The common file keeps packageExtensions as its last section, so a fragment
  * is merged by appending its entries under the existing key.
  */
-function mergeYarnrc(existing, incoming) {
+const mergeYarnrc = (existing, incoming) => {
   const marker = '\npackageExtensions:\n'
   const start = existing.indexOf(marker)
   const tail = start < 0 ? '' : existing.slice(start + marker.length)
@@ -70,7 +76,7 @@ function mergeYarnrc(existing, incoming) {
   return `${existing.trimEnd()}\n${incoming.slice('packageExtensions:\n'.length)}`
 }
 
-function substitute(text, values, sourcePath) {
+const substitute = (text, values, sourcePath) => {
   return text.replace(placeholderPattern, (_match, name) => {
     if (!(name in values)) {
       throw new Error(`unresolved placeholder {{${name}}} in ${sourcePath}`)
@@ -79,13 +85,13 @@ function substitute(text, values, sourcePath) {
   })
 }
 
-function sortedEntries(record) {
+const sortedEntries = (record) => {
   return Object.fromEntries(
     Object.entries(record).sort(([left], [right]) => left.localeCompare(right)),
   )
 }
 
-function mergeManifests(existing, incoming) {
+const mergeManifests = (existing, incoming) => {
   return {
     ...existing,
     ...incoming,
@@ -95,7 +101,7 @@ function mergeManifests(existing, incoming) {
   }
 }
 
-function writeTemplateFile(sourcePath, targetPath, values) {
+const writeTemplateFile = (sourcePath, targetPath, values) => {
   const content = substitute(
     readFileSync(sourcePath, 'utf8'),
     values,
@@ -111,7 +117,7 @@ function writeTemplateFile(sourcePath, targetPath, values) {
         JSON.parse(readFileSync(targetPath, 'utf8')),
         JSON.parse(content),
       )
-      writeFileSync(targetPath, `${JSON.stringify(merged, null, 2)}\n`)
+      writeFileSync(targetPath, `${JSON.stringify(merged, null, MANIFEST_INDENT_SPACES)}\n`)
       return
     }
     if (appendableFiles.has(fileName)) {
@@ -131,7 +137,7 @@ function writeTemplateFile(sourcePath, targetPath, values) {
   chmodSync(targetPath, statSync(sourcePath).mode)
 }
 
-function copyTemplateTree(sourceDirectory, targetDirectory, values) {
+const copyTemplateTree = (sourceDirectory, targetDirectory, values) => {
   for (const entry of readdirSync(sourceDirectory, { withFileTypes: true })) {
     const sourcePath = join(sourceDirectory, entry.name)
     const targetPath = join(targetDirectory, entry.name)
@@ -145,7 +151,7 @@ function copyTemplateTree(sourceDirectory, targetDirectory, values) {
   }
 }
 
-function requireProfile(versions, profileName) {
+const requireProfile = (versions, profileName) => {
   const profile = versions.profiles[profileName]
   if (profile === undefined) {
     throw new Error(
@@ -155,7 +161,7 @@ function requireProfile(versions, profileName) {
   return profile
 }
 
-function collectGroups(versions, groupNames) {
+const collectGroups = (versions, groupNames) => {
   return groupNames.reduce((merged, groupName) => {
     const group = versions[groupName]
     if (group === undefined) {
@@ -170,7 +176,7 @@ function collectGroups(versions, groupNames) {
  * each workspace directory to its profile so the project manifest records the
  * complete composition rather than only the root profiles.
  */
-function describeComposition(versions, profiles, workspaces) {
+const describeComposition = (versions, profiles, workspaces) => {
   const appliedProfiles = []
   const workspaceMap = {}
   const hasMonorepo = profiles.some(
@@ -214,7 +220,7 @@ function describeComposition(versions, profiles, workspaces) {
  * workspace manifest drops root-only fields and scripts, and dependency groups
  * already hoisted to the root are not repeated.
  */
-function generateWorkspace({
+const generateWorkspace = ({
   hoistedGroups,
   rootDirectory,
   scope,
@@ -224,7 +230,7 @@ function generateWorkspace({
   withShared,
   workspaceName,
   workspaceProfileName,
-}) {
+}) => {
   const profile = requireProfile(versions, workspaceProfileName)
 
   mkdirSync(targetDirectory, { recursive: true })
@@ -258,7 +264,7 @@ function generateWorkspace({
   manifest.devDependencies = sortedEntries(
     collectGroups(versions, profile.devDependencies.filter((group) => !hoisted.has(group))),
   )
-  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, MANIFEST_INDENT_SPACES)}\n`)
 }
 
 /**
@@ -268,7 +274,7 @@ function generateWorkspace({
  * profiles append to `.gitignore` and `.env.example` and merge scripts. The
  * optional CI asset is copied last. The target must be empty or absent.
  */
-export function generateProject({
+export const generateProject = ({
   targetDirectory,
   projectName,
   profiles,
@@ -277,7 +283,7 @@ export function generateProject({
   htmlLang = 'en',
   securityLevel = 'R1',
   securityRationale = 'Public demonstration content without authentication or personal data.',
-}) {
+}) => {
   if (typeof projectName !== 'string' || !/^[a-z0-9][a-z0-9._-]*$/.test(projectName)) {
     throw new Error('projectName must be a lowercase package name without a scope')
   }
@@ -386,7 +392,7 @@ export function generateProject({
   if (Object.keys(resolutions).length > 0) {
     manifest.resolutions = sortedEntries(resolutions)
   }
-  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, MANIFEST_INDENT_SPACES)}\n`)
 
   return { targetDirectory, values, versions, appliedProfiles, workspaceMap }
 }
@@ -399,7 +405,7 @@ Profiles are applied in order; overlays such as supabase follow a base profile.
 The monorepo profile requires --client and --server. The target directory must
 not exist or must be empty (a fresh .git directory is tolerated).`
 
-function runCli(argv) {
+const runCli = (argv) => {
   const { values } = parseArgs({
     args: argv,
     options: {
@@ -461,7 +467,7 @@ const invokedDirectly = process.argv[1] !== undefined
 
 if (invokedDirectly) {
   try {
-    runCli(process.argv.slice(2))
+    runCli(process.argv.slice(CLI_ARGUMENTS_OFFSET))
   } catch (error) {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)
     process.exitCode = 1

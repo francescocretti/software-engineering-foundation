@@ -16,7 +16,7 @@ const referencesPath = resolve(
   'skills/bootstrap-web-project/references',
 )
 
-function collectMarkdownFiles(directory) {
+const collectMarkdownFiles = (directory) => {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const entryPath = resolve(directory, entry.name)
 
@@ -27,7 +27,7 @@ function collectMarkdownFiles(directory) {
   })
 }
 
-function collectRequirementIds() {
+const collectRequirementIds = () => {
   return collectMarkdownFiles(referencesPath).flatMap((file) => {
     const document = readFileSync(file, 'utf8')
     return [...document.matchAll(/^## `([A-Z][A-Z0-9-]+)`[^\n]*$/gm)].map(
@@ -249,21 +249,72 @@ test('the representative ESLint composition enables typed and accessibility rule
   const invalidResults = await eslint.lintFiles([
     resolve(fixturePath, 'src/invalid.ts'),
   ])
+  const invalidConstantsResults = await eslint.lintFiles([
+    resolve(fixturePath, 'src/invalid.constants.ts'),
+  ])
   const validResults = await eslint.lintFiles([
     resolve(fixturePath, 'src/valid.ts'),
+    resolve(fixturePath, 'src/valid.constants.ts'),
   ])
+  const reportedRules = new Set(
+    invalidResults[0].messages.map(({ ruleId }) => ruleId),
+  )
 
   assert.equal(reactConfig.rules['jsx-a11y/alt-text'][0], 2)
   assert.equal(reactConfig.rules['react-hooks/rules-of-hooks'][0], 2)
   assert.equal(reactConfig.rules['@stylistic/semi'][0], 2)
   assert.ok(
-    invalidResults[0].messages.some(
-      ({ ruleId }) => ruleId === '@typescript-eslint/no-explicit-any',
-    ),
+    reportedRules.has('@typescript-eslint/no-explicit-any'),
     'expected typed linting to reject explicit any',
   )
-  assert.equal(validResults[0].errorCount, 0)
-  assert.equal(validResults[0].warningCount, 0)
+  assert.ok(
+    reportedRules.has('func-style'),
+    'expected CORE-ARROW-001 to reject a function declaration',
+  )
+  assert.ok(
+    reportedRules.has('no-restricted-syntax'),
+    'expected CORE-ARROW-001 to reject a function expression bound to a variable',
+  )
+  assert.ok(
+    reportedRules.has('@typescript-eslint/no-magic-numbers'),
+    'expected CORE-CONSTANT-001 to reject an inline numeric literal',
+  )
+  assert.ok(
+    invalidConstantsResults[0].messages.some(
+      ({ ruleId }) => ruleId === '@typescript-eslint/naming-convention',
+    ),
+    'expected CORE-CONSTANT-001 to require UPPER_SNAKE_CASE in a constants module',
+  )
+
+  for (const result of validResults) {
+    assert.equal(result.errorCount, 0, `unexpected error in ${result.filePath}`)
+    assert.equal(result.warningCount, 0, `unexpected warning in ${result.filePath}`)
+  }
+})
+
+test('numeric literals stay readable in tests and tool configuration', async () => {
+  const fixturePath = resolve(repositoryRoot, 'tests/fixtures/tooling')
+  const eslint = new ESLint({
+    cwd: fixturePath,
+    overrideConfigFile: resolve(fixturePath, 'eslint.config.mjs'),
+  })
+
+  for (const exemptFile of ['src/feature.test.ts', 'vitest.config.ts']) {
+    const config = await eslint.calculateConfigForFile(
+      resolve(fixturePath, exemptFile),
+    )
+
+    assert.equal(
+      config.rules['@typescript-eslint/no-magic-numbers'][0],
+      0,
+      `expected ${exemptFile} to be exempt from the constants requirement`,
+    )
+    assert.equal(
+      config.rules['func-style'][0],
+      2,
+      `expected ${exemptFile} to still require arrow functions`,
+    )
+  }
 })
 
 test('normative references have unique IDs and governance metadata', () => {

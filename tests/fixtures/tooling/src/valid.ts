@@ -1,3 +1,2 @@
-export function normalizeLabel(value: string): string {
-  return value.trim().toLocaleLowerCase()
-}
+export const normalizeLabel = (value: string): string =>
+  value.trim().toLocaleLowerCase()

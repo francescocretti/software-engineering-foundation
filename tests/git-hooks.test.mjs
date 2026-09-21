@@ -15,7 +15,7 @@ const ensureGitRoot = resolve(
 )
 const husky = resolve(repositoryRoot, 'node_modules/.bin/husky')
 
-function run(command, arguments_, cwd) {
+const run = (command, arguments_, cwd) => {
   const result = spawnSync(command, arguments_, {
     cwd,
     encoding: 'utf8',

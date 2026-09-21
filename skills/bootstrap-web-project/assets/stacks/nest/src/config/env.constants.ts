@@ -1,0 +1,5 @@
+export const MAX_TCP_PORT = 65535
+export const DEFAULT_PORT = 3000
+export const DEFAULT_THROTTLE_LIMIT = 100
+export const MIN_THROTTLE_TTL_MS = 1000
+export const DEFAULT_THROTTLE_TTL_MS = 60_000

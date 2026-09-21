@@ -42,6 +42,9 @@ Next.js is intentionally outside the initial scope.
   `node-modules` linker.
 - ESLint is the only JavaScript and TypeScript linting and formatting engine.
 - Prettier is not used.
+- Functions are arrow functions unless an arrow cannot express the code.
+- Meaningful numeric literals live in colocated `<feature>.constants.ts`
+  modules, not inline.
 - WCAG 2.2 AA is mandatory for every frontend.
 - Security controls are graduated through the R1, R2 and R3 risk levels.
 - R2 is the default for authenticated applications.

@@ -10,7 +10,7 @@ import { configureApp } from '../src/app.setup'
 
 let app: INestApplication | undefined
 
-async function createApp(): Promise<Server> {
+const createApp = async (): Promise<Server> => {
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile()
   app = moduleRef.createNestApplication({ logger: false })
   configureApp(app)

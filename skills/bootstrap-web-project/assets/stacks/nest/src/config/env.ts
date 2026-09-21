@@ -1,5 +1,13 @@
 import { z } from 'zod'
 
+import {
+  DEFAULT_PORT,
+  DEFAULT_THROTTLE_LIMIT,
+  DEFAULT_THROTTLE_TTL_MS,
+  MAX_TCP_PORT,
+  MIN_THROTTLE_TTL_MS,
+} from './env.constants'
+
 const originList = z
   .string()
   .default('')
@@ -9,10 +17,14 @@ const originList = z
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   HOST: z.string().min(1).default('127.0.0.1'),
-  PORT: z.coerce.number().int().min(0).max(65535).default(3000),
+  PORT: z.coerce.number().int().min(0).max(MAX_TCP_PORT).default(DEFAULT_PORT),
   CORS_ORIGINS: originList,
-  THROTTLE_LIMIT: z.coerce.number().int().min(1).default(100),
-  THROTTLE_TTL_MS: z.coerce.number().int().min(1000).default(60_000),
+  THROTTLE_LIMIT: z.coerce.number().int().min(1).default(DEFAULT_THROTTLE_LIMIT),
+  THROTTLE_TTL_MS: z.coerce
+    .number()
+    .int()
+    .min(MIN_THROTTLE_TTL_MS)
+    .default(DEFAULT_THROTTLE_TTL_MS),
 })
 
 export type Env = z.infer<typeof envSchema>
@@ -21,7 +33,7 @@ export type Env = z.infer<typeof envSchema>
  * Validates the process environment for `ConfigModule`. Fails fast with the
  * offending variable names, never their values.
  */
-export function validateEnv(source: Record<string, unknown>): Env {
+export const validateEnv = (source: Record<string, unknown>): Env => {
   const result = envSchema.safeParse(source)
 
   if (!result.success) {

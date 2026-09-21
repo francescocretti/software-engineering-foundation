@@ -1,7 +1,9 @@
 import { Transform, type TransformFnParams } from 'class-transformer'
 import { IsString, Length } from 'class-validator'
 
-function trimString({ value }: TransformFnParams): unknown {
+import { MAX_GREETING_NAME_LENGTH } from '../greetings.constants'
+
+const trimString = ({ value }: TransformFnParams): unknown => {
   const raw: unknown = value
   return typeof raw === 'string' ? raw.trim() : raw
 }
@@ -9,6 +11,6 @@ function trimString({ value }: TransformFnParams): unknown {
 export class CreateGreetingDto {
   @Transform(trimString)
   @IsString()
-  @Length(1, 100)
+  @Length(1, MAX_GREETING_NAME_LENGTH)
   name!: string
 }

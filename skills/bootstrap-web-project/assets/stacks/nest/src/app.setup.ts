@@ -9,7 +9,7 @@ import type { Env } from './config/env'
  * application instance. `main.ts` and the end-to-end tests share it so tests
  * exercise the production configuration.
  */
-export function configureApp(app: INestApplication): void {
+export const configureApp = (app: INestApplication): void => {
   const config = app.get<ConfigService<Env, true>>(ConfigService)
   const origins = config.get('CORS_ORIGINS', { infer: true })
 
