@@ -26,13 +26,27 @@ corepack yarn validate
   required hoisting.
 - Declare meaningful numeric literals as `UPPER_SNAKE_CASE` exports of a
   `<feature>.constants.ts` module colocated with the feature.
+- Delete dead code instead of commenting it out; every `TODO` or `FIXME`
+  references its issue, as in `TODO(#123)`.
+- Give every ESLint disable directive the rules it disables and a reason after
+  `--`, on the narrowest scope; split complex functions instead of
+  suppressing the complexity check.
 - Never commit, print or log secrets and authentication material.
 - Validate external input at the appropriate trust boundary.
 - Preserve or improve tests for changed behavior.
 {{ACCESSIBILITY_INVARIANTS}}
 
+Read `docs/foundation/README.md` for the foundation requirements that apply to
+this project, and review changes against them. Plan a feature that needs
+analysis in `docs/features/<slug>/plan.md` from `docs/features/_template/`,
+before implementing it, and keep its "Changes during implementation" section
+current while you work.
+
 Read `.engineering-foundation.yml` for the selected profiles and security
 classification. Apply the matching security profile and keep ASVS evidence
-versioned with the project. Document any intentional deviation from a MUST
-requirement with its identifier, reason, compensating control, owner and review
-date.
+versioned with the project. Record any intentional deviation from a MUST
+requirement in `docs/exceptions.yml` with its identifier, scope, justification,
+compensating control, owner and expiry date; `corepack yarn lint` rejects an
+incomplete or expired entry. Keep `.engineering-foundation.yml` in step with
+the project. Its workflow mode, `{{WORKFLOW}}`, states whether people review
+every change (`assisted`) or review is automated (`autonomous`).

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
-import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { execFileSync, spawnSync } from 'node:child_process'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import test, { before } from 'node:test'
 import { fileURLToPath } from 'node:url'
@@ -22,6 +22,13 @@ const run = (command, args, options = {}) => {
   })
 }
 
+// dependency-cruiser exits non-zero on a violation: the tests read its report.
+const depcruise = () => spawnSync(binary('depcruise'), ['--config', '.dependency-cruiser.mjs', '.'], {
+  cwd: projectDirectory,
+  encoding: 'utf8',
+  env: { ...process.env, NO_COLOR: '1' },
+})
+
 let generated
 
 before(() => {
@@ -40,6 +47,11 @@ test('the generated Fastify project is complete and fully resolved', () => {
     '.env.example',
     '.engineering-foundation.yml',
     '.husky/pre-commit',
+    '.secretlintrc.json',
+    '.dependency-cruiser.mjs',
+    'knip.config.js',
+    '.github/pull_request_template.md',
+    '.gitlab/merge_request_templates/Default.md',
     'eslint.config.mjs',
     'src/app.ts',
     'src/config.constants.ts',
@@ -79,16 +91,123 @@ test('the generated Fastify project is complete and fully resolved', () => {
 })
 
 test('the generated Fastify project passes the shared lint gate', () => {
-  run(binary('eslint'), ['.', '--max-warnings=0'])
+  assert.doesNotThrow(() => run(binary('eslint'), ['.', '--max-warnings=0']))
+  assert.doesNotThrow(() => run(binary('depcruise'), ['--config', '.dependency-cruiser.mjs', '.']))
+})
+
+test('the generated Fastify project keeps infrastructure packages inside adapter folders', (context) => {
+  const featurePath = resolve(projectDirectory, 'src/features/greetings/logger-type.ts')
+  const adapterPath = resolve(projectDirectory, 'src/infrastructure/logger.ts')
+  context.after(() => {
+    rmSync(featurePath, { force: true })
+    rmSync(resolve(projectDirectory, 'src/infrastructure'), { force: true, recursive: true })
+  })
+  // A type-only import still couples the feature to the vendor (STRUCT-PORT-001).
+  const typeImport = 'import type { Logger } from \'pino\'\n\nexport type ApplicationLogger = Logger\n'
+  writeFileSync(featurePath, typeImport)
+  mkdirSync(dirname(adapterPath), { recursive: true })
+  writeFileSync(adapterPath, typeImport)
+
+  const result = depcruise()
+  assert.match(result.stdout, /error infrastructure-only-in-adapters: src\/features\/greetings\/logger-type\.ts/)
+  assert.doesNotMatch(result.stdout, /infrastructure-only-in-adapters: src\/infrastructure\//)
+
+  const localConfigPath = resolve(projectDirectory, '.dependency-cruiser.local.mjs')
+  context.after(() => rmSync(localConfigPath, { force: true }))
+  writeFileSync(localConfigPath, 'export default { ports: { adapterPaths: [ \'^src/features/greetings/\' ] } }\n')
+  assert.doesNotMatch(depcruise().stdout, /infrastructure-only-in-adapters/)
+})
+
+test('the generated Fastify project reads process.env only in its configuration modules', (context) => {
+  const featurePath = resolve(projectDirectory, 'src/features/greetings/greetings-env.ts')
+  context.after(() => rmSync(featurePath, { force: true }))
+  writeFileSync(featurePath, 'export const greetingsPrefix = process.env.GREETINGS_PREFIX\n')
+
+  const result = spawnSync(binary('eslint'), ['src/features/greetings/greetings-env.ts', 'src/server.ts'], {
+    cwd: projectDirectory,
+    encoding: 'utf8',
+    env: { ...process.env, NO_COLOR: '1' },
+  })
+  assert.match(result.stdout, /greetings-env\.ts[\s\S]*no-restricted-properties/)
+  assert.doesNotMatch(result.stdout, /server\.ts/)
+})
+
+test('the generated Fastify project keeps a generated client inside adapters', (context) => {
+  const clientPath = resolve(projectDirectory, 'src/generated/orm/enums.ts')
+  const featurePath = resolve(projectDirectory, 'src/features/greetings/channel.ts')
+  const dataPath = resolve(projectDirectory, 'src/features/greetings/greetings.data.ts')
+  const localConfigPath = resolve(projectDirectory, '.dependency-cruiser.local.mjs')
+  context.after(() => {
+    rmSync(resolve(projectDirectory, 'src/generated'), { force: true, recursive: true })
+    for (const path of [featurePath, dataPath, localConfigPath]) {
+      rmSync(path, { force: true })
+    }
+  })
+  // The generated client imports the vendor by construction: it is an adapter.
+  mkdirSync(dirname(clientPath), { recursive: true })
+  writeFileSync(clientPath, 'import type { Logger } from \'pino\'\n\nexport type Channel = \'email\'\nexport type ClientLogger = Logger\n')
+  const typeImport = 'import type { Channel } from \'../../generated/orm/enums.ts\'\n\nexport type GreetingChannel = Channel\n'
+  writeFileSync(featurePath, typeImport)
+  writeFileSync(dataPath, typeImport)
+
+  const result = depcruise()
+  assert.match(result.stdout, /error generated-clients-only-in-adapters: src\/features\/greetings\/channel\.ts/)
+  assert.match(result.stdout, /error generated-clients-only-in-adapters: src\/features\/greetings\/greetings\.data\.ts/)
+  assert.doesNotMatch(result.stdout, /infrastructure-only-in-adapters: src\/generated\//)
+
+  // An adapter path can name files: a feature's data module may use the client.
+  writeFileSync(localConfigPath, 'export default { ports: { adapterPaths: [ String.raw`\\.data\\.ts$` ] } }\n')
+  const withDataModules = depcruise().stdout
+  assert.match(withDataModules, /error generated-clients-only-in-adapters: src\/features\/greetings\/channel\.ts/)
+  assert.doesNotMatch(withDataModules, /greetings\.data\.ts/)
+})
+
+test('the generated Fastify project scans committable files for secrets without printing them', async (context) => {
+  const scan = () => spawnSync(binary('secretlint'), ['--secretlintignore', '.gitignore', '**/*'], {
+    cwd: projectDirectory,
+    encoding: 'utf8',
+    env: { ...process.env, NO_COLOR: '1' },
+  })
+  // Built at runtime so that no token-shaped value is ever committed here.
+  const token = `ghp_${'a'.repeat(36)}`
+  const leakPath = resolve(projectDirectory, 'leaked-token.txt')
+  const ignoredPath = resolve(projectDirectory, '.env')
+  context.after(() => {
+    rmSync(leakPath, { force: true })
+    rmSync(ignoredPath, { force: true })
+  })
+
+  assert.equal(scan().status, 0, 'the generated templates contain no secret')
+
+  writeFileSync(ignoredPath, `GITHUB_TOKEN=${token}\n`)
+  assert.equal(scan().status, 0, 'a file Git ignores cannot be committed and is not scanned')
+
+  const examplePath = resolve(projectDirectory, 'EXAMPLE.md')
+  context.after(() => rmSync(examplePath, { force: true }))
+  writeFileSync(examplePath, `<!-- secretlint-disable-next-line -->\nexport TOKEN=${token}\n`)
+  assert.equal(scan().status, 0, 'a documented example marked with a comment is not reported')
+
+  writeFileSync(leakPath, `token = "${token}"\n`)
+  const result = scan()
+  assert.equal(result.status, 1, 'a committable token fails the scan')
+  assert.match(result.stdout, /GITHUB_TOKEN/)
+  assert.equal(`${result.stdout}${result.stderr}`.includes(token), false, 'the finding is masked')
+
+  const lintStaged = await import(resolve(projectDirectory, 'lint-staged.config.mjs'))
+  assert.equal(lintStaged.default['*'], 'secretlint', 'every staged file is scanned')
+  assert.equal(
+    JSON.parse(readFileSync(resolve(projectDirectory, 'package.json'), 'utf8')).scripts['lint:secrets'],
+    'secretlint --secretlintignore .gitignore "**/*"',
+  )
 })
 
 test('the generated Fastify project typechecks', () => {
-  run(binary('tsc'), ['-p', 'tsconfig.json'])
+  assert.doesNotThrow(() => run(binary('tsc'), ['-p', 'tsconfig.json']))
 })
 
 test('the generated Fastify tests cover validation, limits and the error contract', () => {
   const output = run(binary('vitest'), ['run'])
-  assert.match(output, /6 passed/)
+  assert.match(output, /10 passed/)
 })
 
 test('the generated Fastify project builds and boots without a configured environment', () => {
@@ -124,4 +243,34 @@ test('the generated Fastify configuration fails fast without leaking values', ()
   assert.match(output, /PORT/)
   assert.match(output, /CORS_ORIGINS/)
   assert.doesNotMatch(output, /not-a-port|javascript:/)
+})
+
+test('the pull and merge request templates ask for the premerge attestation', () => {
+  for (const template of [
+    '.github/pull_request_template.md',
+    '.gitlab/merge_request_templates/Default.md',
+  ]) {
+    const content = readFileSync(resolve(projectDirectory, template), 'utf8')
+    assert.match(content, /^- \[ \] `corepack yarn premerge` passed on commit `<sha>`/m, template)
+    assert.match(content, /SEC-RISK-003/, template)
+  }
+})
+
+test('the generated Fastify project reports unused exports and dependencies', (context) => {
+  const knip = () => spawnSync(binary('knip'), ['--no-progress'], {
+    cwd: projectDirectory,
+    encoding: 'utf8',
+    env: { ...process.env, NO_COLOR: '1' },
+  })
+  const unusedPath = resolve(projectDirectory, 'src/features/greetings/unused.ts')
+  context.after(() => rmSync(unusedPath, { force: true }))
+
+  const clean = knip()
+  assert.equal(clean.status, 0, clean.stdout)
+  assert.doesNotMatch(clean.stdout, /Configuration hints/, 'no ignore entry is unnecessary')
+
+  writeFileSync(unusedPath, 'export const forgotten = (): string => \'never imported\'\n')
+  const dirty = knip()
+  assert.equal(dirty.status, 1)
+  assert.match(dirty.stdout, /Unused files \(1\)\nsrc\/features\/greetings\/unused\.ts/)
 })

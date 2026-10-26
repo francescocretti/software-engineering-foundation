@@ -1,11 +1,104 @@
+import comments from '@eslint-community/eslint-plugin-eslint-comments/configs'
 import eslint from '@eslint/js'
 import importPlugin from 'eslint-plugin-import'
+import sonarjs from 'eslint-plugin-sonarjs'
 import { defineConfig } from 'eslint/config'
 
 const defaultJavaScriptFiles = ['**/*.{js,mjs,cjs}']
 
+// CORE-DEBT-001: a debt marker names the issue that tracks it. The default
+// accepts a GitLab-style reference such as `TODO(#123)`; a project using another
+// tracker passes its own pattern as the rule option.
+/** @public */
+export const defaultIssueReference = '#\\d+'
+
+const todoIssueReferenceRule = {
+  meta: {
+    type: 'suggestion',
+    docs: {
+      description: 'Require debt markers to reference the issue that tracks them.',
+    },
+    schema: [
+      {
+        type: 'object',
+        properties: { reference: { type: 'string' } },
+        additionalProperties: false,
+      },
+    ],
+    messages: {
+      missingReference:
+        '{{marker}} must reference the issue that tracks it, for example {{marker}}(#123).',
+    },
+  },
+  create: (context) => {
+    const reference = context.options[0]?.reference ?? defaultIssueReference
+    const marker = new RegExp(String.raw`\b(TODO|FIXME)\b(?!\(${reference}\))`, 'g')
+
+    return {
+      Program: () => {
+        for (const comment of context.sourceCode.getAllComments()) {
+          for (const match of comment.value.matchAll(marker)) {
+            context.report({
+              loc: comment.loc,
+              messageId: 'missingReference',
+              data: { marker: match[1] },
+            })
+          }
+        }
+      },
+    }
+  },
+}
+
+/** @public Registered by the shared configurations; exported for project rules. */
+export const foundationPlugin = {
+  meta: { name: 'foundation' },
+  rules: { 'todo-issue-reference': todoIssueReferenceRule },
+}
+
+// Shared by the JavaScript and TypeScript configurations. The SonarJS settings
+// are left out so they cannot override the React version detection.
+/** @public Part of the module API that project configurations compose. */
+export const codeHealthConfigs = [
+  comments.recommended,
+  {
+    name: 'foundation/code-health',
+    plugins: { foundation: foundationPlugin, sonarjs },
+    rules: sonarjs.configs.recommended.rules,
+  },
+]
+
+// CORE-SUPPRESS-001, CORE-DEBT-001 and CORE-COMPLEXITY-001. The SonarJS marker
+// rules are replaced by the issue-reference rule, which accepts tracked debt
+// instead of rejecting every marker.
+/** @public For JavaScript; TypeScript files use `typeScriptCodeHealthRules`. */
+export const codeHealthRules = {
+  '@eslint-community/eslint-comments/require-description': [
+    'error',
+    { ignore: ['eslint-enable'] },
+  ],
+  'foundation/todo-issue-reference': 'error',
+  'max-depth': ['error', 4],
+  'sonarjs/cognitive-complexity': ['error', 15],
+  'sonarjs/fixme-tag': 'off',
+  'sonarjs/no-commented-code': 'error',
+  'sonarjs/todo-tag': 'off',
+}
+
+/**
+ * @public The code health rules for TypeScript files, also for projects that
+ * add them on top of their own configuration. `strictNullChecks` proves
+ * nullability from the types; `sonarjs/null-dereference` ignores them and
+ * reports typed values such as a `string`.
+ */
+export const typeScriptCodeHealthRules = {
+  ...codeHealthRules,
+  'sonarjs/null-dereference': 'off',
+}
+
 // Numeric literals stay readable in files that are themselves declarations of
 // values (tool configuration) or the specification of a behavior (tests).
+/** @public Spread into `literalExemptFiles` to extend rather than replace the defaults. */
 export const defaultLiteralExemptFiles = [
   '**/*.{test,spec}.{js,mjs,cjs}',
   '**/test/**/*.{js,mjs,cjs}',
@@ -14,6 +107,7 @@ export const defaultLiteralExemptFiles = [
   '**/.config/**/*.{js,mjs,cjs}',
 ]
 
+/** @public Part of the module API that project configurations compose. */
 export const foundationIgnores = {
   name: 'foundation/ignores',
   ignores: [
@@ -30,6 +124,7 @@ export const foundationIgnores = {
 // variable. Generators are excluded because they have no arrow form. A project
 // that sets its own `no-restricted-syntax` replaces this entry rather than
 // adding to it, so it must repeat the selector.
+/** @public Part of the module API that project configurations compose. */
 export const arrowFunctionRules = {
   'func-style': ['error', 'expression'],
   'prefer-arrow-callback': [
@@ -48,6 +143,7 @@ export const arrowFunctionRules = {
 
 // -1, 0 and 1 carry no domain meaning to extract, and an array index is already
 // named by the collection it indexes.
+/** @public Part of the module API that project configurations compose. */
 export const magicNumberOptions = {
   detectObjects: true,
   enforceConst: true,
@@ -55,6 +151,7 @@ export const magicNumberOptions = {
   ignoreArrayIndexes: true,
 }
 
+/** @public Part of the module API that project configurations compose. */
 export const createJavaScriptConfig = ({
   files = defaultJavaScriptFiles,
   literalExemptFiles = defaultLiteralExemptFiles,
@@ -65,6 +162,7 @@ export const createJavaScriptConfig = ({
     extends: [
       eslint.configs.recommended,
       importPlugin.flatConfigs.recommended,
+      ...codeHealthConfigs,
     ],
     languageOptions: {
       ecmaVersion: 'latest',
@@ -82,6 +180,7 @@ export const createJavaScriptConfig = ({
     },
     rules: {
       ...arrowFunctionRules,
+      ...codeHealthRules,
       'array-callback-return': ['error', { checkForEach: true }],
       'curly': ['error', 'all'],
       'eqeqeq': ['error', 'always'],

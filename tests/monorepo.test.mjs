@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import test, { before } from 'node:test'
@@ -69,6 +69,8 @@ test('the monorepo layout follows STRUCT-SHAPE-001 with root-owned tooling', () 
   for (const file of [
     '.config/eslint/react.mjs',
     '.husky/pre-commit',
+    '.secretlintrc.json',
+    '.dependency-cruiser.mjs',
     'eslint.config.mjs',
     'lint-staged.config.mjs',
     'apps/client/index.html',
@@ -146,16 +148,42 @@ for (const [server, root] of Object.entries(variants)) {
     run(root, binary('eslint'), ['.', '--max-warnings=0'])
   })
 
+  test(`the ${server} monorepo enforces dependency classes and workspace boundaries`, (context) => {
+    const depcruise = () => spawnSync(
+      binary('depcruise'),
+      ['--config', '.dependency-cruiser.mjs', '.'],
+      { cwd: root, encoding: 'utf8', env: { ...process.env, NO_COLOR: '1' } },
+    )
+    const crossAppPath = resolve(root, 'apps/client/src/server-import.ts')
+    const devImportPath = resolve(root, 'apps/server/src/dev-import.ts')
+    context.after(() => {
+      rmSync(crossAppPath, { force: true })
+      rmSync(devImportPath, { force: true })
+    })
+
+    const clean = depcruise()
+    assert.equal(clean.status, 0, clean.stdout)
+
+    const serverModule = server === 'fastify' ? 'app.ts' : 'app.module.ts'
+    writeFileSync(crossAppPath, `export * from '../../server/src/${serverModule}'\n`)
+    writeFileSync(devImportPath, 'export { describe } from \'vitest\'\n')
+    const violations = depcruise()
+    assert.equal(violations.status, 2, violations.stdout)
+    assert.match(violations.stdout, /error no-client-to-server: apps\/client\/src\/server-import\.ts/)
+    assert.match(violations.stdout, /error not-to-dev-dep: apps\/server\/src\/dev-import\.ts/)
+  })
+
   test(`the ${server} monorepo typechecks every workspace, including the shared contract`, () => {
-    run(root, binary('tsc'), ['-p', 'packages/shared/tsconfig.json'])
-    run(root, binary('tsc'), ['-p', 'apps/client/tsconfig.app.json'])
-    run(root, binary('tsc'), ['-p', 'apps/client/tsconfig.node.json'])
-    run(root, binary('tsc'), ['-p', 'apps/server/tsconfig.json'])
+    assert.doesNotThrow(() => run(root, binary('tsc'), ['-p', 'packages/shared/tsconfig.json']))
+    assert.doesNotThrow(() => run(root, binary('tsc'), ['-p', 'apps/client/tsconfig.app.json']))
+    assert.doesNotThrow(() => run(root, binary('tsc'), ['-p', 'apps/client/tsconfig.node.json']))
+    assert.doesNotThrow(() => run(root, binary('tsc'), ['-p', 'apps/server/tsconfig.json']))
   })
 
   test(`the ${server} monorepo runs every workspace test suite`, () => {
     assert.match(run(resolve(root, 'packages/shared'), binary('vitest'), ['run']), /2 passed/)
-    assert.match(run(resolve(root, 'apps/server'), binary('vitest'), ['run']), /6 passed/)
+    const serverTests = server === 'fastify' ? /10 passed/ : /6 passed/
+    assert.match(run(resolve(root, 'apps/server'), binary('vitest'), ['run']), serverTests)
     if (server === 'fastify') {
       assert.match(run(resolve(root, 'apps/client'), binary('vitest'), ['run']), /3 passed/)
     }

@@ -85,7 +85,13 @@ For every JavaScript or TypeScript project:
 
 React profiles include `react.mjs` and the Vite refresh configuration; Node
 backends and Node-run configuration or test files include `node.mjs` with
-deliberately scoped file globs. Each stack reference describes its template and
+deliberately scoped file globs, plus `createProcessEnvConfig` on server source
+files: `process.env` is read only in the configuration modules it names
+(`CORE-CONFIG-001`), tests excepted. ESLint flat config **replaces** a rule's
+options instead of merging them, so a later project block that also sets
+`no-restricted-properties` on those files silently drops the restriction: it
+must spread `processEnvRestriction` from `node.mjs` into its own options, and a
+probe file shows both restrictions still fire. Each stack reference describes its template and
 composition: [React](stacks/react.md), [Fastify](stacks/fastify.md),
 [Nest](stacks/nest.md) and [Supabase](stacks/supabase.md); the
 [monorepo reference](monorepo.md) composes them under one root.
@@ -97,8 +103,12 @@ public names:
 
 ```json
 {
-  "lint": "eslint . --max-warnings=0",
+  "lint": "yarn lint:foundation && yarn lint:code && yarn lint:deps && yarn lint:secrets",
+  "lint:code": "eslint . --max-warnings=0",
+  "lint:deps": "depcruise --config .dependency-cruiser.mjs .",
   "lint:fix": "eslint . --fix --max-warnings=0",
+  "lint:foundation": "node .config/foundation/check-foundation.mjs",
+  "lint:secrets": "secretlint --secretlintignore .gitignore \"**/*\"",
   "typecheck": "tsc --noEmit",
   "validate": "yarn lint && yarn typecheck && yarn test && yarn build",
   "postinstall": "husky"
@@ -106,9 +116,109 @@ public names:
 ```
 
 `lint-staged` runs `eslint --fix --max-warnings=0` only for staged JavaScript
-and TypeScript files. The pre-commit hook does not run repository-wide
-typechecking or tests. The complete gate runs explicitly before merge and in CI
-when CI is enabled.
+and TypeScript files, and `secretlint` for every staged file. The pre-commit
+hook does not run repository-wide typechecking or tests. The complete gate runs
+explicitly before merge and in CI when CI is enabled.
+
+## Dependency rules
+
+`.dependency-cruiser.mjs`, run by `lint:deps`, checks what ESLint cannot see
+from one file at a time:
+
+- `not-to-dev-dep`, `no-non-package-json` and `no-duplicate-dep-types` keep
+  dependency classes correct for [`DEP-MINIMAL-001`](standards/dependencies.md):
+  production code under `src/`, `<folder>/src/`, `apps/*/src/` or
+  `packages/*/src/` never imports a development dependency, every
+  imported package is declared, and no package is declared twice.
+- `no-client-to-server`, `no-server-to-client` and `no-package-to-app` enforce
+  the workspace boundaries of [`STRUCT-BOUNDARY-001`](standards/project-structure.md)
+  and [`STRUCT-SHARED-001`](standards/project-structure.md) in a monorepo. They
+  match paths from the root (`^apps/client/`, `^apps/server/`, `^packages/`),
+  so `lint:deps` runs once from the root, never per workspace; a layout with
+  other folders redefines them under the same names. They match nothing in a
+  single-package project.
+- `infrastructure-only-in-adapters` enforces [`STRUCT-PORT-001`](standards/project-structure.md):
+  production code imports an infrastructure package (ORMs and database
+  drivers, queues, cloud SDKs, identity, email, logging, payments), type-only
+  imports included, only from `src/infrastructure/`, `src/db/` or
+  `src/adapters/`. Frameworks such as Fastify, Nest and React are not on the
+  list. A project adds packages and adapter paths, for example an
+  authentication feature that owns its library, through
+  `ports: { packages, adapterPaths }` in `.dependency-cruiser.local.mjs`; a
+  package scope ends with `/`. Paths are regular expressions, so an adapter
+  path can name files, such as data modules that live in a feature
+  (`\.data\.ts$`).
+- `generated-clients-only-in-adapters` confines a generated client, such as
+  an ORM client generated into `src/generated/`, the same way: only adapter
+  paths import it, types included. The folder is an adapter path itself,
+  since the generated code imports the vendor. A client generated elsewhere is
+  declared in `ports.confinedPaths`.
+- `not-to-unresolvable` rejects an import that does not resolve. Workspace
+  packages under the project scope are exempt: they resolve to build output
+  that does not exist before the build, and the typecheck verifies them.
+
+Cycles stay with `import/no-cycle` in ESLint, which reports them in the editor
+and at commit. A `/// <reference types>` directive only brings ambient types
+and is not a development dependency import.
+
+Project-specific rules, such as a feature that must not import another
+feature's internals, and option overrides, such as `tsConfig` for path
+aliases, go in `.dependency-cruiser.local.mjs`, which default-exports
+`{ forbidden, options, ports }`: its rules are added, a rule with the same name
+replaces the foundation's, its options override the foundation's, and `ports`
+extends the infrastructure packages and adapter folders. The
+foundation's file stays untouched, so synchronization keeps updating it.
+
+## Pre-merge gate
+
+`premerge` runs `lint`, `typecheck`, `build` and Knip, then
+`.config/foundation/premerge.mjs`, which runs `test` with V8 coverage and
+compares the result with the lines the branch changes.
+
+Knip, configured by `knip.config.js`, rejects unused files, exports and
+dependencies across the project. Its `ignoreDependencies` list only names
+packages used in ways Knip cannot trace: tools run by the Git hooks, the
+secretlint preset loaded from `.secretlintrc.json`, and dependencies a profile
+declares before the first import, such as monorepo workspace packages and the
+Supabase client. Remove those last entries once the code imports them. Mark an
+export that is deliberate public API with a `/** @public */` comment. Project
+options go in `knip.local.js`, whose `ignore` and `ignoreDependencies` entries
+are added to the foundation's.
+
+Projects that add the foundation's ESLint rules to their own configuration
+use `codeHealthConfigs` with `typeScriptCodeHealthRules` for TypeScript files
+and `codeHealthRules` for JavaScript files.
+
+The coverage step works as follows:
+
+1. The base is `premerge.baseRef` from `.engineering-foundation.yml`,
+   `origin/main` by default; `FOUNDATION_BASE_REF` overrides it, for example
+   with the merge request's target in CI.
+2. Changed lines come from `git diff --unified=0` against the merge base.
+3. A changed line counts when a statement starts on it; it is covered when that
+   statement ran. Files outside the coverage scope of the test configuration,
+   such as tests and entry points, are not measured.
+4. The gate fails below `premerge.diffCoverage` and lists the uncovered
+   lines. It also fails when `eslint-suppressions.json` or
+   `.dependency-cruiser-known-violations.json`, the baselines of a retrofitted
+   project, has more entries than at the merge base. It warns when the working tree has uncommitted changes, because the
+   result then does not describe the commit it reports.
+
+The last line, `premerge: passed on <sha>`, is the value the pull request
+template asks for. The coverage scope lives in each `vitest.config`: `include`
+names the source, `exclude` the tests and the entry points that only wire the
+process.
+
+## Secret scanning
+
+For [`GIT-SECRET-001`](standards/git-workflow.md), `secretlint` with
+`@secretlint/secretlint-rule-preset-recommend`, configured in
+`.secretlintrc.json`, scans every staged file in the pre-commit hook and every
+file that Git does not ignore as part of `lint`. Reusing `.gitignore` as the
+scan's ignore list keeps the scope to what can be committed: a local `.env`
+stays out of the scan because it stays out of history. Findings are masked in
+the output, so the scan never prints the value it found. A detected secret is
+treated as compromised and rotated; removing it from the file is not enough.
 
 ## Style baseline
 
@@ -147,10 +257,40 @@ and everything under `.config/`. The arrow requirement stays on in all of them.
 Extend the exempt globs through the `literalExemptFiles` option, spreading the
 exported `defaultLiteralExemptFiles` so the shared entries survive.
 
+## Code health baseline
+
+`base.mjs` exports `codeHealthConfigs` and `codeHealthRules`, which both the
+JavaScript and the TypeScript configuration apply to every source file.
+
+- For [`CORE-SUPPRESS-001`](standards/core.md), the
+  `@eslint-community/eslint-comments` recommended rules and `require-description`
+  reject a disable directive without named rules or without a reason after
+  `--`. `reportUnusedDisableDirectives` already rejects stale directives.
+- For [`CORE-DEBT-001`](standards/core.md), the local
+  `foundation/todo-issue-reference` rule rejects a `TODO` or `FIXME` that does
+  not reference an issue as `TODO(#123)`, and `sonarjs/no-commented-code`
+  rejects commented-out code. A project with another tracker passes its
+  reference pattern as the rule option, for example
+  `['error', { reference: '[A-Z]+-\\d+' }]`. The SonarJS `todo-tag` and
+  `fixme-tag` rules are off because they reject tracked markers too.
+- For [`CORE-COMPLEXITY-001`](standards/core.md),
+  `sonarjs/cognitive-complexity` allows 15 per function and `max-depth` allows
+  four nested blocks.
+- The SonarJS recommended rules add bug-pattern, security-hotspot and
+  code-smell checks. Its settings are not applied, so they cannot override the
+  React version detection. In TypeScript files `sonarjs/null-dereference` is
+  off: it ignores types, and `strictNullChecks` proves nullability exactly.
+
+A security-hotspot rule such as `sonarjs/no-os-command-from-path` marks code to
+review, not necessarily a defect. When the reviewed code is correct, keep the
+rule and suppress the single site with its reason, as `CORE-SUPPRESS-001`
+requires; the suppression records that the hotspot was reviewed.
+
 ## Deliberate boundaries
 
-The preset enforces typed linting, promise safety, documented TypeScript
-suppressions, import validity, React Hooks and strict JSX accessibility. It does
+The preset enforces typed linting, promise safety, documented TypeScript and
+ESLint suppressions, tracked debt markers, bounded complexity, import validity,
+React Hooks and strict JSX accessibility. It does
 not prescribe domain naming prefixes, file-per-type organization, universal
 named exports, class bans, inline-handler bans or coverage percentages.
 

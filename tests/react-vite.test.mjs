@@ -46,6 +46,8 @@ test('the generated React + Vite project is complete and fully resolved', () => 
     '.gitignore',
     '.husky/commit-msg',
     '.husky/pre-commit',
+    '.secretlintrc.json',
+    '.dependency-cruiser.mjs',
     '.node-version',
     '.yarnrc.yml',
     'AGENTS.md',
@@ -95,12 +97,13 @@ test('the generated React + Vite project is complete and fully resolved', () => 
 })
 
 test('the generated project passes the shared lint gate', () => {
-  run(binary('eslint'), ['.', '--max-warnings=0'])
+  assert.doesNotThrow(() => run(binary('eslint'), ['.', '--max-warnings=0']))
+  assert.doesNotThrow(() => run(binary('depcruise'), ['--config', '.dependency-cruiser.mjs', '.']))
 })
 
 test('the generated project typechecks its application and Node configuration', () => {
-  run(binary('tsc'), ['-p', 'tsconfig.app.json'])
-  run(binary('tsc'), ['-p', 'tsconfig.node.json'])
+  assert.doesNotThrow(() => run(binary('tsc'), ['-p', 'tsconfig.app.json']))
+  assert.doesNotThrow(() => run(binary('tsc'), ['-p', 'tsconfig.node.json']))
 })
 
 test('the generated component tests pass, including the axe-core scan', () => {

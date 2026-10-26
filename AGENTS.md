@@ -14,7 +14,12 @@ of generic tutorials.
 - Put files intended for generated projects under `assets/`, not in references.
 - Put deterministic bootstrap steps in `skills/bootstrap-web-project/scripts/`
   and keep the references as their specification. Scripts never delete or
-  overwrite user files.
+  overwrite user files. The one controlled exception is `sync-foundation.mjs`,
+  which replaces a foundation-owned file only when its recorded hash proves the
+  project never changed it, and writes `<file>.sef-new` otherwise.
+- Every file a generated project receives from `tooling/`, `ci/` or the
+  request templates is listed by `renderFoundationAssets`; add new tooling
+  there so synchronization covers it.
 - Do not duplicate a requirement across multiple documents; link to its
   canonical location.
 - Use Yarn through Corepack. Do not introduce npm, pnpm or Bun workflows.
@@ -23,6 +28,11 @@ of generic tutorials.
   repository too: the foundation passes the gate it ships.
 - Treat WCAG 2.2 AA as mandatory for every React profile.
 - Never print, commit, log or place secrets in fixtures.
+- Keep `.claude-plugin/plugin.json` at the version of `package.json`; the
+  plugin is the repository root, so every skill under `skills/`, agent under
+  `agents/` and hook in `hooks/hooks.json` ships with it.
+- Update `docs/manual.md` in the same change as any behavior a project user
+  sees: a new check, script, option, generated file or failure message.
 
 ## Verification
 

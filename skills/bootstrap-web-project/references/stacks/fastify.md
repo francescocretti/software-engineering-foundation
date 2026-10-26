@@ -20,6 +20,7 @@ The production template lives in `assets/stacks/fastify/`:
 | `src/server.ts` | Entry point with graceful shutdown through `close-with-grace` |
 | `src/plugins/security.ts` | Helmet, CORS allowlist and rate limiting, registered without encapsulation |
 | `src/plugins/error-handler.ts` | Stable `{ error: { code, message, issues? } }` contract for every failure |
+| `src/plugins/route-contracts.ts` | `onRoute` hook that refuses to register a route without its schemas |
 | `src/features/*/routes.ts` | Encapsulated feature plugins with zod request and response schemas |
 | `test/build-test-app.ts` | Builds the full application against isolated configuration |
 
@@ -45,6 +46,19 @@ The profile ships a `.yarnrc.yml` fragment that marks the OpenAPI peers of
 section of the root `.yarnrc.yml` and keep it while the package declares those
 peers as required.
 
+### Configuration for several entry points
+
+The template validates the whole environment with one schema, which suits one
+service. When the same code runs as several services
+([`SERVERLESS-CONFIG-001`](../deploy/serverless.md)), split the schema into
+groups, one per system (core, HTTP, each provider), each a zod object that
+yields its own keys. Each entry point lists its groups and validates them all
+at start, before importing its features, so one error names every missing
+variable. Keep `loadConfig(source)` for scripts and tests. If modules read
+configuration when they load, parse each group on the first access to one of
+its keys, so an entry point that never imports a feature never validates its
+group.
+
 ## `FASTIFY-SCHEMA-001` — every route declares its contract
 
 - **Level:** MUST
@@ -57,12 +71,17 @@ peers as required.
 - **Rationale:** Schemas validate untrusted input before handlers run, give
   handlers inferred types and let response serialization enforce the output
   contract.
-- **Verification:** Route tests send missing, malformed, oversized and
-  unexpected fields and expect `VALIDATION_FAILED`; review that no route lacks
-  a schema.
+- **Verification:** `enforceRouteContract`, added as an `onRoute` hook in
+  `buildApp()` before any plugin, throws at registration when a route has no
+  response schema, has path parameters without a `params` schema, or accepts a
+  body without a `body` schema; the application therefore cannot start with
+  such a route. Route tests send missing, malformed, oversized and unexpected
+  fields and expect `VALIDATION_FAILED`.
 - **Sources:** [Fastify validation and serialization](https://fastify.dev/docs/latest/Reference/Validation-and-Serialization/), [fastify-type-provider-zod](https://github.com/turkerdev/fastify-type-provider-zod), `SEC-INPUT-001`.
 - **Exceptions:** Streaming or proxy routes document why a body schema cannot
-  apply and bound the payload another way.
+  apply and bound the payload another way, in the route's
+  `config.contractException`, which the hook accepts in place of a body
+  schema.
 
 ## `FASTIFY-PLUGIN-001` — features are encapsulated plugins
 
@@ -106,7 +125,11 @@ peers as required.
 - **Requirement:** Register `@fastify/helmet`, an explicit CORS origin
   allowlist, `@fastify/rate-limit` and a body size limit, all driven by the
   validated configuration. `TRUST_PROXY` is explicit and enabled only behind a
-  known proxy. Log redaction covers authorization and cookie headers.
+  known proxy; on Cloud Run it is a hop count, never `true`
+  ([`CLOUDRUN-PROXY-001`](../deploy/cloud-run.md)). Log redaction covers authorization and cookie headers. With a
+  `deploy` target other than `none`, the in-memory rate limit is only a
+  per-instance brake, and limits against brute force follow
+  [`SERVERLESS-STATE-001`](../deploy/serverless.md).
 - **Rationale:** These controls bound resource use and remove common
   misconfiguration classes before any feature code exists.
 - **Verification:** Tests assert security headers, rate-limit responses and

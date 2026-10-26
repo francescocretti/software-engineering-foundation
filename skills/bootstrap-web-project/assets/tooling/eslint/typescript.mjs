@@ -3,7 +3,12 @@ import importPlugin from 'eslint-plugin-import'
 import { defineConfig } from 'eslint/config'
 import tseslint from 'typescript-eslint'
 
-import { arrowFunctionRules, magicNumberOptions } from './base.mjs'
+import {
+  arrowFunctionRules,
+  codeHealthConfigs,
+  magicNumberOptions,
+  typeScriptCodeHealthRules,
+} from './base.mjs'
 
 const defaultTypeScriptFiles = ['**/*.{ts,tsx,mts,cts}']
 
@@ -17,6 +22,7 @@ const defaultLiteralExemptFiles = [
 
 const defaultConstantsFiles = ['**/*.constants.{ts,mts,cts}']
 
+/** @public Part of the module API that project configurations compose. */
 export const createTypeScriptConfig = ({
   constantsFiles = defaultConstantsFiles,
   files = defaultTypeScriptFiles,
@@ -37,6 +43,7 @@ export const createTypeScriptConfig = ({
         ...tseslint.configs.stylisticTypeChecked,
         importPlugin.flatConfigs.recommended,
         importPlugin.flatConfigs.typescript,
+        ...codeHealthConfigs,
       ],
       languageOptions: {
         parserOptions: {
@@ -56,6 +63,7 @@ export const createTypeScriptConfig = ({
       },
       rules: {
         ...arrowFunctionRules,
+        ...typeScriptCodeHealthRules,
         'import/first': 'error',
         'import/newline-after-import': 'error',
         'import/no-cycle': ['error', { ignoreExternal: true }],

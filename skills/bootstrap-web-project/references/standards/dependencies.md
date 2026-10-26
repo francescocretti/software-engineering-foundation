@@ -57,8 +57,11 @@
   without a documented migration need.
 - **Rationale:** Every dependency adds supply-chain, maintenance, bundle and
   compatibility cost.
-- **Verification:** Review new packages for purpose, maintenance, license,
-  transitive footprint and correct dependency class.
+- **Verification:** The `lint:deps` dependency-cruiser rules reject production
+  code importing a development dependency, a package used but not declared and
+  a package declared in two dependency classes; Knip in `premerge` rejects a
+  declared package that nothing uses; review new packages for
+  purpose, maintenance, license and transitive footprint.
 - **Sources:** [NIST SSDF](https://csrc.nist.gov/pubs/sp/800/218/final), practitioner experience with production TypeScript applications.
 - **Exceptions:** Temporary duplication during an incremental migration records
   an owner and removal condition.

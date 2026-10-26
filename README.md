@@ -21,7 +21,10 @@ risk-based security standard, shared tooling assets, the React with Vite,
 Fastify, Nest, Supabase and full-stack monorepo profiles and the optional
 GitLab CI baseline are established. Every template is verified on each test run
 by generating a project and running its lint, typecheck, tests and build. The
-first stable release follows the end-to-end validation of generated projects.
+lint gate also checks secrets, tracked debt, described suppressions, bounded
+complexity, dependency classes, workspace boundaries, the project record and
+the exception register. Releases and their notable changes are listed in the
+[changelog](CHANGELOG.md).
 
 ## Supported scope
 
@@ -50,9 +53,30 @@ Next.js is intentionally outside the initial scope.
 - R2 is the default for authenticated applications.
 - CI templates are optional.
 - Secrets, credentials and authentication keys must never be printed.
+- Secrets are scanned in every staged file and in every committable file by
+  `lint`.
+- Every `TODO` or `FIXME` references its issue, as in `TODO(#123)`, and
+  commented-out code is removed.
+- Every lint suppression names its rules and states a reason.
+- Cognitive complexity is bounded at 15 per function and nesting at four
+  levels.
+- Production code never imports development dependencies, and client, server
+  and shared packages keep their boundaries; `lint` checks both.
+- Feature plans live in `docs/features/` with the code, and `lint` checks that
+  a plan has no open blocking question once work starts and no unsettled
+  acceptance criterion once done.
+- Every project records its workflow mode, `assisted` or `autonomous`, and its
+  exceptions in an expiring register checked by `lint`.
 
 ## Entry points
 
+- Claude Code users install the `sef` plugin from this repository:
+  `/plugin marketplace add <this repository>`, then
+  `/plugin install sef@software-engineering-foundation`.
+- Adopting the foundation in an existing project starts at
+  [`skills/retrofit-project/SKILL.md`](skills/retrofit-project/SKILL.md).
+- People creating or maintaining a project start at the
+  [user manual](docs/manual.md).
 - Agents bootstrapping a project start at
   [`skills/bootstrap-web-project/SKILL.md`](skills/bootstrap-web-project/SKILL.md).
 - Contributors changing a standard start at

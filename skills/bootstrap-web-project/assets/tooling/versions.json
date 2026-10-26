@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "foundationVersion": "2.0.0",
+  "foundationVersion": "3.1.0",
   "verifiedOn": "2026-09-10",
   "runtime": {
     "nodeMajor": 24,
@@ -114,16 +114,23 @@
   "commonDevDependencies": {
     "@commitlint/cli": "21.2.2",
     "@commitlint/config-conventional": "21.2.2",
+    "@eslint-community/eslint-plugin-eslint-comments": "4.8.1",
     "@eslint/js": "9.39.5",
+    "@secretlint/secretlint-rule-preset-recommend": "13.0.7",
     "@stylistic/eslint-plugin": "5.10.0",
+    "dependency-cruiser": "18.5.0",
     "eslint": "9.39.5",
     "eslint-import-resolver-typescript": "4.4.5",
     "eslint-plugin-import": "2.32.0",
+    "eslint-plugin-sonarjs": "4.2.2",
     "globals": "17.12.0",
     "husky": "9.1.7",
+    "knip": "6.39.0",
     "lint-staged": "17.5.0",
+    "secretlint": "13.0.7",
     "typescript": "5.9.3",
-    "typescript-eslint": "8.70.0"
+    "typescript-eslint": "8.70.0",
+    "yaml": "2.9.1"
   },
   "fastifyDependencies": {
     "@fastify/cors": "11.3.0",
@@ -137,7 +144,7 @@
     "zod": "4.5.4"
   },
   "fastifyDevDependencies": {
-    "pino-pretty": "13.1.3",
+    "@vitest/coverage-v8": "5.0.0",
     "vite": "8.2.2",
     "vitest": "5.0.0"
   },
@@ -160,6 +167,7 @@
     "@swc/core": "1.16.2",
     "@types/express": "5.0.6",
     "@types/supertest": "7.2.1",
+    "@vitest/coverage-v8": "5.0.0",
     "supertest": "7.2.2",
     "unplugin-swc": "1.6.0",
     "vite": "8.2.2",
@@ -191,6 +199,7 @@
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",
     "@vitejs/plugin-react": "6.1.1",
+    "@vitest/coverage-v8": "5.0.0",
     "axe-core": "4.13.0",
     "jsdom": "29.1.1",
     "playwright-core": "1.63.0",
@@ -201,6 +210,7 @@
     "zod": "4.5.4"
   },
   "sharedDevDependencies": {
+    "@vitest/coverage-v8": "5.0.0",
     "vite": "8.2.2",
     "vitest": "5.0.0"
   },

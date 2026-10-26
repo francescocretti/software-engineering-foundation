@@ -10,6 +10,7 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { dirname, join, relative, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -17,18 +18,61 @@ import { parseArgs } from 'node:util'
 
 import {
   CLI_ARGUMENTS_OFFSET,
+  GENERATED_FILE_MODE,
   MANIFEST_INDENT_SPACES,
   MAX_REPORTED_BLOCKING_ENTRIES,
 } from './generate-project.constants.mjs'
 
 const assetsRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../assets')
+const referencesRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../references')
 const placeholderPattern = /\{\{([A-Z0-9_]+)\}\}/g
 const appendableFiles = new Set(['.gitignore', '.env.example'])
-const rootOnlyScripts = new Set(['lint', 'lint:fix', 'validate', 'postinstall'])
+const rootOnlyScripts = new Set([
+  'lint',
+  'lint:code',
+  'lint:deps',
+  'lint:fix',
+  'lint:foundation',
+  'lint:secrets',
+  'premerge',
+  'validate',
+  'postinstall',
+])
+const workflows = new Set(['assisted', 'autonomous'])
+// Deployment targets carry rules, not assets: each one only makes references
+// applicable, so the list is fixed here rather than read from a directory.
+const DEPLOY_TARGETS = ['none', 'cloud-run']
 const tolerableTargetEntries = new Set(['.git'])
 
 export const readVersions = () => {
   return JSON.parse(readFileSync(resolve(assetsRoot, 'tooling/versions.json'), 'utf8'))
+}
+
+const collectMarkdownFiles = (directory) => {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const entryPath = resolve(directory, entry.name)
+    if (entry.isDirectory()) {
+      return collectMarkdownFiles(entryPath)
+    }
+    return entry.name.endsWith('.md') ? [entryPath] : []
+  })
+}
+
+/**
+ * Maps every requirement identifier of the references to its normative level,
+ * so the generated project can reject an exception for an unknown requirement.
+ */
+export const readRequirementLevels = () => {
+  const levels = {}
+  for (const file of collectMarkdownFiles(referencesRoot)) {
+    const document = readFileSync(file, 'utf8')
+    for (const match of document.matchAll(/^## `([A-Z][A-Z0-9-]+)`[^\n]*\n\n- \*\*Level:\*\* (MUST|SHOULD|MAY)$/gm)) {
+      levels[match[1]] = match[2]
+    }
+  }
+  return Object.fromEntries(
+    Object.entries(levels).sort(([left], [right]) => left.localeCompare(right)),
+  )
 }
 
 /**
@@ -76,7 +120,12 @@ const mergeYarnrc = (existing, incoming) => {
   return `${existing.trimEnd()}\n${incoming.slice('packageExtensions:\n'.length)}`
 }
 
-const substitute = (text, values, sourcePath) => {
+/**
+ * Replaces every `{{NAME}}` placeholder of a template with its value and fails
+ * on a placeholder without one. Synchronization renders templates through it
+ * too, so a project compares with what the generator would have written.
+ */
+export const substitute = (text, values, sourcePath) => {
   return text.replace(placeholderPattern, (_match, name) => {
     if (!(name in values)) {
       throw new Error(`unresolved placeholder {{${name}}} in ${sourcePath}`)
@@ -151,6 +200,156 @@ const copyTemplateTree = (sourceDirectory, targetDirectory, values) => {
   }
 }
 
+const listTemplateFiles = (sourceDirectory, targetDirectory) => {
+  return readdirSync(resolve(assetsRoot, sourceDirectory), { withFileTypes: true }).flatMap(
+    (entry) => {
+      const source = join(sourceDirectory, entry.name)
+      const target = targetDirectory === '' ? entry.name : join(targetDirectory, entry.name)
+      return entry.isDirectory() ? listTemplateFiles(source, target) : [{ source, target }]
+    },
+  )
+}
+
+export const ASSET_RECORD_PATH = '.config/foundation/assets.json'
+const REQUIREMENTS_PATH = '.config/foundation/requirements.json'
+const REFERENCES_TARGET = 'docs/foundation'
+
+// Which references apply beyond the shared ones every project follows.
+const profileReferences = {
+  'fastify': ['stacks/fastify.md'],
+  'monorepo': ['monorepo.md'],
+  'nest': ['stacks/nest.md'],
+  'react-vite': ['stacks/react.md', 'accessibility.md', 'accessibility/testing.md',
+    'accessibility/wcag-22-aa-map.md'],
+  'supabase': ['stacks/supabase.md'],
+}
+const sharedReferences = [
+  'foundation.md',
+  'tooling.md',
+  'standards/core.md',
+  'standards/dependencies.md',
+  'standards/git-workflow.md',
+  'standards/project-record.md',
+  'standards/project-structure.md',
+  'standards/testing.md',
+  'standards/typescript.md',
+  'security/risk-classification.md',
+  'security/baseline.md',
+  'security/asvs.md',
+]
+
+/**
+ * The index of the copied references: which apply to this project and which
+ * are present only so that links between references resolve.
+ */
+const describeReferenceIndex = ({
+  appliedProfiles,
+  ci,
+  deploy,
+  foundationVersion,
+  securityLevel,
+}) => {
+  const levelFile = { R1: 'r1-basic', R2: 'r2-standard', R3: 'r3-high' }[securityLevel]
+  const applicable = [
+    ...sharedReferences,
+    `security/${levelFile}.md`,
+    ...appliedProfiles.flatMap((profileName) => profileReferences[profileName] ?? []),
+    ...(ci === 'none' ? [] : [`${ci}-ci.md`]),
+    ...(deploy === 'none' ? [] : ['deploy/serverless.md', `deploy/${deploy}.md`]),
+  ]
+  const all = collectMarkdownFiles(referencesRoot)
+    .map((file) => relative(referencesRoot, file))
+    .sort()
+  const link = (file) => `- [${file}](${file})`
+  return [
+    '# Foundation requirements',
+    '',
+    `The requirements of Software Engineering Foundation ${foundationVersion}, copied`,
+    'here so that people and agents can review against them without the',
+    'foundation repository. `sync-foundation.mjs` keeps them in step with the',
+    'recorded foundation version; do not edit them here.',
+    '',
+    `## Applicable to this project (${securityLevel}, ${appliedProfiles.join(', ')})`,
+    '',
+    ...applicable.filter((file) => all.includes(file)).map(link),
+    '',
+    '## Present for reference only',
+    '',
+    ...all.filter((file) => !applicable.includes(file)).map(link),
+    '',
+  ].join('\n')
+}
+
+export const hashContent = (content) => createHash('sha256').update(content).digest('hex')
+
+/**
+ * Renders the files the foundation owns in a generated project, keyed by their
+ * path in the project: the shared tooling, hooks, checks and request templates.
+ * Application code, the project record and the exception register belong to
+ * the project and are not listed. The generator and `sync-foundation.mjs` both
+ * use this list, so an update produces exactly what a new project would get.
+ */
+export const renderFoundationAssets = ({
+  appliedProfiles,
+  ci,
+  deploy = 'none',
+  securityLevel,
+  values,
+  versions,
+}) => {
+  const eslintModules = new Set(
+    appliedProfiles.flatMap((profileName) => requireProfile(versions, profileName).eslintModules),
+  )
+  const files = [
+    ...[...eslintModules].map((moduleName) => ({
+      source: `tooling/eslint/${moduleName}.mjs`,
+      target: `.config/eslint/${moduleName}.mjs`,
+    })),
+    ...listTemplateFiles('tooling/typescript', '.config/typescript'),
+    ...listTemplateFiles('tooling/foundation', '.config/foundation'),
+    ...listTemplateFiles('tooling/git', ''),
+    ...listTemplateFiles('tooling/architecture', ''),
+    ...listTemplateFiles('common/.github', '.github'),
+    ...listTemplateFiles('common/.gitlab', '.gitlab'),
+    ...listTemplateFiles('common/docs/features', 'docs/features'),
+    { source: 'common/.editorconfig', target: '.editorconfig' },
+    ...(ci === 'none' ? [] : listTemplateFiles(join('ci', ci), '')),
+  ]
+  const assets = new Map(files.map(({ source, target }) => {
+    const sourcePath = resolve(assetsRoot, source)
+    return [target, {
+      content: substitute(readFileSync(sourcePath, 'utf8'), values, source),
+      mode: statSync(sourcePath).mode,
+    }]
+  }))
+  for (const file of collectMarkdownFiles(referencesRoot)) {
+    assets.set(join(REFERENCES_TARGET, relative(referencesRoot, file)), {
+      content: readFileSync(file, 'utf8'),
+      mode: statSync(file).mode,
+    })
+  }
+  assets.set(join(REFERENCES_TARGET, 'README.md'), {
+    content: describeReferenceIndex({
+      appliedProfiles,
+      ci,
+      deploy,
+      foundationVersion: versions.foundationVersion,
+      securityLevel,
+    }),
+    mode: GENERATED_FILE_MODE,
+  })
+  assets.set(REQUIREMENTS_PATH, {
+    content: `${JSON.stringify(readRequirementLevels(), null, MANIFEST_INDENT_SPACES)}\n`,
+    mode: GENERATED_FILE_MODE,
+  })
+  return new Map([...assets].sort(([left], [right]) => left.localeCompare(right)))
+}
+
+/** The record `sync-foundation.mjs` compares with: one hash per owned file. */
+export const formatAssetRecord = (foundationVersion, hashes) => {
+  return `${JSON.stringify({ foundationVersion, files: hashes }, null, MANIFEST_INDENT_SPACES)}\n`
+}
+
 const requireProfile = (versions, profileName) => {
   const profile = versions.profiles[profileName]
   if (profile === undefined) {
@@ -169,6 +368,87 @@ const collectGroups = (versions, groupNames) => {
     }
     return { ...merged, ...group }
   }, {})
+}
+
+/**
+ * Resolves the workspace profiles of a monorepo profile, adding them to the
+ * applied profiles and mapping each workspace directory to its profile.
+ */
+const describeMonorepoWorkspaces = ({
+  appliedProfiles,
+  profile,
+  versions,
+  workspaceMap,
+  workspaces,
+}) => {
+  for (const workspaceName of Object.keys(profile.workspaces)) {
+    if (workspaceName !== 'shared' && !(workspaceName in workspaces)) {
+      throw new Error(`the monorepo profile requires a ${workspaceName} workspace profile`)
+    }
+  }
+  for (const [workspaceName, workspaceProfileName] of Object.entries({
+    ...workspaces,
+    shared: profile.sharedProfile,
+  })) {
+    requireProfile(versions, workspaceProfileName)
+    appliedProfiles.push(workspaceProfileName)
+    workspaceMap[profile.workspaces[workspaceName]] = workspaceProfileName
+  }
+}
+
+// Dependencies a profile declares before the application's first import of
+// them, so Knip would report them as unused in a freshly generated project.
+const knipProfileIgnores = {
+  monorepo: (scope) => `/^@${scope}\\//`,
+  supabase: () => `'@supabase/supabase-js'`,
+}
+
+export const describeKnipIgnores = (appliedProfiles, scope) => {
+  const entries = appliedProfiles
+    .filter((profileName) => profileName in knipProfileIgnores)
+    .map((profileName) => knipProfileIgnores[profileName](scope))
+  if (entries.length === 0) {
+    return ''
+  }
+  return [
+    '',
+    '    // Declared by the template before the first import. Remove each entry',
+    '    // once the code imports it, so an unused declaration is reported again.',
+    ...entries.map((entry) => `    ${entry},`),
+  ].join('\n')
+}
+
+/**
+ * References and their index are not templates: they are written from the
+ * rendering, which the asset record then checks like every other owned file.
+ */
+const writeReferenceAssets = (assets, targetDirectory) => {
+  for (const [path, { content, mode }] of assets) {
+    if (path.startsWith(`${REFERENCES_TARGET}/`)) {
+      mkdirSync(dirname(resolve(targetDirectory, path)), { recursive: true })
+      writeFileSync(resolve(targetDirectory, path), content)
+      chmodSync(resolve(targetDirectory, path), mode)
+    }
+  }
+}
+
+/**
+ * Records what the foundation wrote, so a later synchronization can tell an
+ * untouched asset from one the project changed. Each copied file must match its
+ * rendering exactly, otherwise the record would be wrong from the start.
+ */
+const writeAssetRecord = ({ assets, targetDirectory, versions }) => {
+  const hashes = {}
+  for (const [path, { content }] of assets) {
+    if (readFileSync(resolve(targetDirectory, path), 'utf8') !== content) {
+      throw new Error(`generated ${path} differs from its foundation asset`)
+    }
+    hashes[path] = hashContent(content)
+  }
+  writeFileSync(
+    resolve(targetDirectory, ASSET_RECORD_PATH),
+    formatAssetRecord(versions.foundationVersion, hashes),
+  )
 }
 
 /**
@@ -192,22 +472,7 @@ const describeComposition = (versions, profiles, workspaces) => {
     appliedProfiles.push(profileName)
 
     if (profile.layout === 'monorepo') {
-      for (const workspaceName of Object.keys(profile.workspaces)) {
-        if (workspaceName === 'shared') {
-          continue
-        }
-        if (!(workspaceName in workspaces)) {
-          throw new Error(`the monorepo profile requires a ${workspaceName} workspace profile`)
-        }
-      }
-      for (const [workspaceName, workspaceProfileName] of Object.entries({
-        ...workspaces,
-        shared: profile.sharedProfile,
-      })) {
-        requireProfile(versions, workspaceProfileName)
-        appliedProfiles.push(workspaceProfileName)
-        workspaceMap[profile.workspaces[workspaceName]] = workspaceProfileName
-      }
+      describeMonorepoWorkspaces({ appliedProfiles, profile, versions, workspaceMap, workspaces })
     }
   }
 
@@ -267,6 +532,40 @@ const generateWorkspace = ({
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, MANIFEST_INDENT_SPACES)}\n`)
 }
 
+/** Rejects an invalid option before anything is written. */
+const validateOptions = ({ ci, deploy, profiles, projectName, securityLevel, workflow }) => {
+  if (typeof projectName !== 'string' || !/^[a-z0-9][a-z0-9._-]*$/.test(projectName)) {
+    throw new Error('projectName must be a lowercase package name without a scope')
+  }
+  if (!Array.isArray(profiles) || profiles.length === 0) {
+    throw new Error('at least one profile is required')
+  }
+  if (ci !== 'none' && !existsSync(resolve(assetsRoot, 'ci', ci))) {
+    throw new Error(`unknown CI profile ${ci}`)
+  }
+  if (!DEPLOY_TARGETS.includes(deploy)) {
+    throw new Error(`unknown deploy target ${deploy}; known: ${DEPLOY_TARGETS.join(', ')}`)
+  }
+  if (!['R1', 'R2', 'R3'].includes(securityLevel)) {
+    throw new Error('securityLevel must be R1, R2 or R3')
+  }
+  if (!workflows.has(workflow)) {
+    throw new Error('workflow must be assisted or autonomous')
+  }
+}
+
+/**
+ * The values the root `package.json` templates use. Synchronization needs the
+ * same ones to render the expected root scripts of an existing project.
+ */
+export const describeManifestValues = (versions, projectName) => ({
+  NODE_ENGINES: `>=${versions.runtime.nodeMajor}.0.0 <${versions.runtime.nodeMajor + 1}`,
+  NODE_MAJOR: String(versions.runtime.nodeMajor),
+  PROJECT_NAME: projectName,
+  SCOPE: projectName,
+  YARN_VERSION: versions.runtime.yarn,
+})
+
 /**
  * Materializes one or more profiles exactly as the skill documents it: common
  * assets, shared tooling copied into `.config/`, Git hooks, each stack
@@ -280,22 +579,13 @@ export const generateProject = ({
   profiles,
   workspaces = {},
   ci = 'none',
+  deploy = 'none',
   htmlLang = 'en',
   securityLevel = 'R1',
   securityRationale = 'Public demonstration content without authentication or personal data.',
+  workflow = 'assisted',
 }) => {
-  if (typeof projectName !== 'string' || !/^[a-z0-9][a-z0-9._-]*$/.test(projectName)) {
-    throw new Error('projectName must be a lowercase package name without a scope')
-  }
-  if (!Array.isArray(profiles) || profiles.length === 0) {
-    throw new Error('at least one profile is required')
-  }
-  if (ci !== 'none' && !existsSync(resolve(assetsRoot, 'ci', ci))) {
-    throw new Error(`unknown CI profile ${ci}`)
-  }
-  if (!['R1', 'R2', 'R3'].includes(securityLevel)) {
-    throw new Error('securityLevel must be R1, R2 or R3')
-  }
+  validateOptions({ ci, deploy, profiles, projectName, securityLevel, workflow })
 
   const versions = readVersions()
   const { appliedProfiles, workspaceMap } = describeComposition(versions, profiles, workspaces)
@@ -304,18 +594,17 @@ export const generateProject = ({
       '- Meet WCAG 2.2 AA for every user-visible page, state and viewport.',
     ACCESSIBILITY_TARGET: 'WCAG 2.2 AA',
     CI_PROFILE: ci,
+    DEPLOY_TARGET: deploy,
     FOUNDATION_VERSION: versions.foundationVersion,
     HTML_LANG: htmlLang,
-    NODE_ENGINES: `>=${versions.runtime.nodeMajor}.0.0 <${versions.runtime.nodeMajor + 1}`,
-    NODE_MAJOR: String(versions.runtime.nodeMajor),
     PROFILES: appliedProfiles.join(', '),
     PROFILES_YAML: JSON.stringify(appliedProfiles),
-    PROJECT_NAME: projectName,
     SECURITY_LEVEL: securityLevel,
     SECURITY_RATIONALE: securityRationale,
-    SCOPE: projectName,
+    KNIP_PROFILE_IGNORES: describeKnipIgnores(appliedProfiles, projectName),
+    WORKFLOW: workflow,
     WORKSPACES_YAML: JSON.stringify(workspaceMap),
-    YARN_VERSION: versions.runtime.yarn,
+    ...describeManifestValues(versions, projectName),
   }
   const rootValues = { ...values, CONFIG_ROOT: './.config' }
   const workspaceValues = { ...values, CONFIG_ROOT: '../../.config' }
@@ -346,6 +635,16 @@ export const generateProject = ({
     rootValues,
   )
   copyTemplateTree(resolve(assetsRoot, 'tooling/git'), targetDirectory, rootValues)
+  copyTemplateTree(resolve(assetsRoot, 'tooling/architecture'), targetDirectory, rootValues)
+  copyTemplateTree(
+    resolve(assetsRoot, 'tooling/foundation'),
+    resolve(targetDirectory, '.config/foundation'),
+    rootValues,
+  )
+  writeFileSync(
+    resolve(targetDirectory, REQUIREMENTS_PATH),
+    `${JSON.stringify(readRequirementLevels(), null, MANIFEST_INDENT_SPACES)}\n`,
+  )
 
   let dependencies = {}
   let devDependencies = {}
@@ -394,12 +693,24 @@ export const generateProject = ({
   }
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, MANIFEST_INDENT_SPACES)}\n`)
 
+  const assets = renderFoundationAssets({
+    appliedProfiles,
+    ci,
+    deploy,
+    securityLevel,
+    values: rootValues,
+    versions,
+  })
+  writeReferenceAssets(assets, targetDirectory)
+  writeAssetRecord({ assets, targetDirectory, versions })
+
   return { targetDirectory, values, versions, appliedProfiles, workspaceMap }
 }
 
 const usage = `usage: generate-project.mjs --target <dir> --name <package-name> --profile <profile>...
-  [--client <profile>] [--server <profile>] [--ci gitlab]
+  [--client <profile>] [--server <profile>] [--ci gitlab] [--deploy ${DEPLOY_TARGETS.join('|')}]
   [--security-level R1|R2|R3] [--security-rationale <text>] [--html-lang <bcp47>]
+  [--workflow assisted|autonomous]
 
 Profiles are applied in order; overlays such as supabase follow a base profile.
 The monorepo profile requires --client and --server. The target directory must
@@ -415,9 +726,11 @@ const runCli = (argv) => {
       'client': { type: 'string' },
       'server': { type: 'string' },
       'ci': { type: 'string', default: 'none' },
+      'deploy': { type: 'string', default: 'none' },
       'security-level': { type: 'string', default: 'R1' },
       'security-rationale': { type: 'string' },
       'html-lang': { type: 'string', default: 'en' },
+      'workflow': { type: 'string', default: 'assisted' },
       'help': { type: 'boolean', default: false },
     },
   })
@@ -444,8 +757,10 @@ const runCli = (argv) => {
     profiles: values.profile,
     workspaces,
     ci: values.ci,
+    deploy: values.deploy,
     htmlLang: values['html-lang'],
     securityLevel: values['security-level'],
+    workflow: values.workflow,
     ...(values['security-rationale'] === undefined
       ? {}
       : { securityRationale: values['security-rationale'] }),
@@ -456,7 +771,8 @@ const runCli = (argv) => {
       `generated ${result.targetDirectory}`,
       `profiles: ${result.appliedProfiles.join(', ')}`,
       `workspaces: ${JSON.stringify(result.workspaceMap)}`,
-      `security: ${values['security-level']}; ci: ${values.ci}`,
+      `security: ${values['security-level']}; ci: ${values.ci}; deploy: ${values.deploy}; `
+      + `workflow: ${values.workflow}`,
       'next: ensure-git-root.mjs, corepack yarn install, corepack yarn validate',
     ].join('\n') + '\n',
   )
