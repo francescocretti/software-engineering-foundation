@@ -23,8 +23,8 @@ GitLab CI baseline are established. Every template is verified on each test run
 by generating a project and running its lint, typecheck, tests and build. The
 lint gate also checks secrets, tracked debt, described suppressions, bounded
 complexity, dependency classes, workspace boundaries, the project record and
-the exception register. The
-first stable release follows the end-to-end validation of generated projects.
+the exception register. Releases and their notable changes are listed in the
+[changelog](CHANGELOG.md).
 
 ## Supported scope
 
